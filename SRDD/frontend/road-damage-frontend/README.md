@@ -1,70 +1,397 @@
-# Getting Started with Create React App
+# 🚧 Road Detector
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+**Road Detector** is an AI-powered Road Damage Reporting and Management System designed to help citizens report road issues while enabling government authorities to efficiently manage, monitor, and resolve complaints.
 
-## Available Scripts
+The platform combines **Artificial Intelligence**, **Computer Vision**, **Django REST Framework**, and **React** to automate road damage identification and streamline the complaint management workflow.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+# 🌟 Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 👤 Citizen Portal
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+* Secure Registration & Login (JWT Authentication)
+* Report Road Damage
+* Upload Road Images
+* Automatic Damage Detection
+* Complaint Tracking
+* Complaint History
+* Complaint Timeline
+* View Repair Progress
+* Notifications
+* Profile Management
+* Feedback & Rating
 
-### `npm test`
+---
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠 Administrator Portal
 
-### `npm run build`
+* Secure Administrator Login
+* Operations Dashboard
+* Complaint Management
+* Search & Filtering
+* Complaint Assignment
+* Status Updates
+* Repair Image Upload
+* Analytics Dashboard
+* Report Generation
+* Department Management
+* Notification Management
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# 🤖 AI Features
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+The system automatically analyzes uploaded road images.
 
-### `npm run eject`
+Supported detections include:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+* Potholes
+* Road Cracks
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The system provides:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+* Damage Identification
+* Detection Accuracy
+* Severity Analysis
+* Repair Priority
+* Damage Summary
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+No manual damage selection is required.
 
-## Learn More
+---
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+# 📲 Notification System
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Integrated with Twilio SMS.
 
-### Code Splitting
+Citizens receive updates when:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+* Complaint Submitted
+* Complaint Assigned
+* Work Scheduled
+* Work Started
+* Work In Progress
+* Work Completed
+* Complaint Closed
 
-### Analyzing the Bundle Size
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+# 🖥 Technology Stack
 
-### Making a Progressive Web App
+## Frontend
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+* React
+* React Router
+* Axios
+* Tailwind CSS
+* Material UI
+* Framer Motion
 
-### Advanced Configuration
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Backend
 
-### Deployment
+* Django
+* Django REST Framework
+* Simple JWT
+* Gunicorn
+* WhiteNoise
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+---
 
-### `npm run build` fails to minify
+## AI
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+* YOLO
+* OpenCV
+* NumPy
+* Pillow
+
+---
+
+## Database
+
+* PostgreSQL (Production)
+* SQLite (Development)
+
+---
+
+## Cloud & Deployment
+
+* Railway
+* GitHub
+
+---
+
+## Notifications
+
+* Twilio SMS API
+
+---
+
+# 📁 Project Structure
+
+```text
+RoadDetector/
+
+├── backend/
+│   ├── authentication/
+│   ├── complaints/
+│   ├── analytics/
+│   ├── notifications/
+│   ├── ai_detection/
+│   ├── media/
+│   └── manage.py
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── layouts/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   ├── routes/
+│   │   └── assets/
+│   └── package.json
+│
+└── README.md
+```
+
+---
+
+# 🚀 Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/245124751058-dotcom/TBPsrdd-es.git
+```
+
+```bash
+cd TBPsrdd-es
+```
+
+---
+
+## Backend Setup
+
+```bash
+cd backend
+
+python -m venv venv
+```
+
+Activate virtual environment.
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run migrations:
+
+```bash
+python manage.py migrate
+```
+
+Start backend:
+
+```bash
+python manage.py runserver
+```
+
+---
+
+## Frontend Setup
+
+```bash
+cd frontend
+
+npm install
+
+npm start
+```
+
+Frontend:
+
+```
+http://localhost:3000
+```
+
+Backend:
+
+```
+http://localhost:8000
+```
+
+---
+
+# 🔐 Environment Variables
+
+Create a `.env` file.
+
+Example:
+
+```env
+SECRET_KEY=
+
+DEBUG=False
+
+DATABASE_URL=
+
+JWT_SECRET_KEY=
+
+TWILIO_ACCOUNT_SID=
+
+TWILIO_AUTH_TOKEN=
+
+TWILIO_PHONE_NUMBER=
+
+MEDIA_ROOT=
+
+MEDIA_URL=
+
+YOLO_MODEL_PATH=
+```
+
+---
+
+# 📊 Application Workflow
+
+Citizen
+
+```
+Register
+      ↓
+Login
+      ↓
+Upload Road Image
+      ↓
+Automatic Damage Detection
+      ↓
+Complaint Submitted
+      ↓
+Complaint Tracking
+      ↓
+Repair Updates
+      ↓
+Complaint Closed
+```
+
+Administrator
+
+```
+Login
+      ↓
+View Complaints
+      ↓
+Assign Complaint
+      ↓
+Schedule Work
+      ↓
+Update Status
+      ↓
+Upload Repair Images
+      ↓
+Close Complaint
+```
+
+---
+
+# 📈 Dashboard Modules
+
+Citizen Dashboard
+
+* Complaint Summary
+* Recent Complaints
+* Complaint Timeline
+* Notifications
+
+Administrator Dashboard
+
+* Total Complaints
+* Pending
+* In Progress
+* Completed
+* Analytics
+* Reports
+* Department Performance
+
+---
+
+# 🔒 Security Features
+
+* JWT Authentication
+* Password Hashing
+* Role-Based Access Control
+* Protected Routes
+* API Authorization
+* Input Validation
+* Secure File Upload
+
+---
+
+# 📸 Media Support
+
+* Road Image Upload
+* Repair Image Upload
+* Image Preview
+* Before / After Comparison
+* Media Storage
+
+---
+
+# 📱 Responsive Design
+
+Optimized for:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+---
+
+# 🚀 Deployment
+
+Production deployment is configured for:
+
+* Railway
+* PostgreSQL
+* Gunicorn
+* WhiteNoise
+
+---
+
+# 🧪 Testing
+
+Verified modules include:
+
+* User Registration
+* User Login
+* Admin Login
+* Complaint Submission
+* Image Upload
+* Damage Detection
+* Complaint History
+* Complaint Tracking
+* Analytics
+* Reports
+* Notifications
+* Twilio Integration
+* Responsive UI
+
+---
+
+# 📄 License
+
+This project is intended for educational, research, and demonstration purposes. Review and adapt the licensing terms before using it in a production or commercial environment.
+
+---
+
+# 👨‍💻 Developed By
+
+B.Tech – Computer Science & Engineering
+
+AI-Powered Road Damage Reporting & Monitoring System
