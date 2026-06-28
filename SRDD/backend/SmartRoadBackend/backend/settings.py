@@ -86,11 +86,11 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'smartroad'),
-        'USER': os.environ.get('DB_USER', 'root'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', '21040724'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '3306'),
+        'NAME': os.environ.get('DB_NAME') or os.environ.get('MYSQLDATABASE') or 'smartroad',
+        'USER': os.environ.get('DB_USER') or os.environ.get('MYSQLUSER') or 'root',
+        'PASSWORD': os.environ.get('DB_PASSWORD') or os.environ.get('MYSQLPASSWORD') or '21040724',
+        'HOST': os.environ.get('DB_HOST') or os.environ.get('MYSQLHOST') or 'localhost',
+        'PORT': os.environ.get('DB_PORT') or os.environ.get('MYSQLPORT') or '3306',
         'OPTIONS': {
             'connect_timeout': 10,
         }
@@ -99,8 +99,9 @@ DATABASES = {
 
 try:
     import dj_database_url
-    if os.environ.get('DATABASE_URL'):
-        DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=False)
+    db_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL') or os.environ.get('MYSQL_PRIVATE_URL')
+    if db_url:
+        DATABASES['default'] = dj_database_url.config(default=db_url, conn_max_age=600, ssl_require=False)
 except ImportError:
     pass
 
