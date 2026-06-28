@@ -1,8 +1,6 @@
 import api from './api';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/';
-
 export const complaintService = {
   create: (formData) => api.post('complaints/', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -18,7 +16,7 @@ export const complaintService = {
   submitFeedback: (id, rating, feedback_text) => api.put(`complaints/${id}/feedback/`, { rating, feedback_text }),
   downloadReport: async (id) => {
     const token = localStorage.getItem('access');
-    const response = await axios.get(`${API_URL}complaints/${id}/report/`, {
+    const response = await axios.get(`${api.defaults.baseURL}complaints/${id}/report/`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       responseType: 'blob'
     });

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { complaintService } from '../services/complaintService';
 import { ROUTES } from '../constants/routes';
+import { getMediaUrl } from '../services/api';
 
 const ReportDamage = () => {
     const [file, setFile] = useState(null);
@@ -64,9 +65,7 @@ const ReportDamage = () => {
 
     // If report is submitted, display the premium AI Analysis report screen
     if (submittedComplaint) {
-        const devImgUrl = submittedComplaint.image ? 
-            (submittedComplaint.image.startsWith('http') ? submittedComplaint.image : `http://localhost:8000${submittedComplaint.image}`) 
-            : preview;
+        const devImgUrl = getMediaUrl(submittedComplaint.image) || preview;
 
         const severity = submittedComplaint.severity_level || 'Low';
         const isCritical = severity === 'Critical' || severity === 'High';

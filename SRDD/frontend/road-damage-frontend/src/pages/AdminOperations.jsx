@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { dashboardService } from '../services/dashboardService';
 import { complaintService } from '../services/complaintService';
 import { ROUTES } from '../constants/routes';
+import { getMediaUrl } from '../services/api';
 
 const AdminOperations = () => {
     const [stats, setStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0, escalated: 0 });
@@ -310,9 +311,7 @@ const AdminOperations = () => {
                             </thead>
                             <tbody className="divide-y divide-slate-50 text-body-sm">
                                 {filteredComplaints.map((complaint) => {
-                                    const devImgUrl = complaint.image 
-                                        ? (complaint.image.startsWith('http') ? complaint.image : `http://localhost:8000${complaint.image}`)
-                                        : null;
+                                    const devImgUrl = getMediaUrl(complaint.image);
 
                                     return (
                                         <tr key={complaint.id} className="hover:bg-slate-50/30 transition-colors">

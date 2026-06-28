@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { complaintService } from '../services/complaintService';
 import { ROUTES } from '../constants/routes';
+import { getMediaUrl } from '../services/api';
 
 const MyComplaints = () => {
     const [complaints, setComplaints] = useState([]);
@@ -143,9 +144,7 @@ const MyComplaints = () => {
             ) : (
                 <div className="space-y-md">
                     {filteredComplaints.map((complaint) => {
-                        const devImgUrl = complaint.image 
-                            ? (complaint.image.startsWith('http') ? complaint.image : `http://localhost:8000${complaint.image}`)
-                            : null;
+                        const devImgUrl = getMediaUrl(complaint.image);
                         const dateStr = complaint.created_at 
                             ? new Date(complaint.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                             : 'Date Unknown';

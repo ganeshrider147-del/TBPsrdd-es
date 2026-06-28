@@ -60,4 +60,11 @@ api.interceptors.response.use(
   }
 );
 
+export const getMediaUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const base = api.defaults.baseURL.replace('/api/', '');
+  return `${base}${path}`;
+};
+
 export default api;

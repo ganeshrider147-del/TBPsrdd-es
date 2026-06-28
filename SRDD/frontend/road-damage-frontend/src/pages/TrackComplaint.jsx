@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { complaintService } from '../services/complaintService';
+import { getMediaUrl } from '../services/api';
 
 const TrackComplaint = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -101,13 +102,8 @@ const TrackComplaint = () => {
         });
     };
 
-    const beforeImg = complaint?.image 
-        ? (complaint.image.startsWith('http') ? complaint.image : `http://localhost:8000${complaint.image}`) 
-        : null;
-
-    const afterImg = complaint?.after_image
-        ? (complaint.after_image.startsWith('http') ? complaint.after_image : `http://localhost:8000${complaint.after_image}`)
-        : null;
+    const beforeImg = getMediaUrl(complaint?.image);
+    const afterImg = getMediaUrl(complaint?.after_image);
 
     return (
         <div className="max-w-2xl mx-auto space-y-lg animate-in fade-in duration-300">
