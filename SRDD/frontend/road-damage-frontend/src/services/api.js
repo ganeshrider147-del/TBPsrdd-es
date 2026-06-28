@@ -1,6 +1,21 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/';
+let API_URL = process.env.REACT_APP_API_URL;
+
+if (!API_URL && typeof window !== 'undefined') {
+  const origin = window.location.origin;
+  if (origin.includes('tbpsrdd-es-production-b2fa.up.railway.app')) {
+    API_URL = 'https://tbpsrdd-es-production.up.railway.app/api/';
+  } else if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    API_URL = 'http://localhost:8000/api/';
+  } else {
+    API_URL = `${origin.replace('-b2fa', '')}/api/`;
+  }
+}
+
+if (!API_URL) {
+  API_URL = 'http://localhost:8000/api/';
+}
 
 const api = axios.create({
   baseURL: API_URL,
