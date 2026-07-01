@@ -5,6 +5,7 @@ Django settings for Road Detector backend.
 import os
 from pathlib import Path
 from datetime import timedelta
+from corsheaders.defaults import default_headers
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -102,12 +103,21 @@ DATABASES = {
 
 try:
     import dj_database_url
-    db_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL') or os.environ.get('MYSQL_PRIVATE_URL')
-    if db_url:
-        DATABASES['default'] = dj_database_url.config(default=db_url, conn_max_age=600, ssl_require=False)
+
+    DATABASE_URL = (
+        os.environ.get("DATABASE_URL")
+        or os.environ.get("MYSQL_URL")
+        or os.environ.get("MYSQL_PRIVATE_URL")
+    )
+
+    if DATABASE_URL:
+        DATABASES["default"] = dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+        )
+
 except ImportError:
     pass
-
 # ------------------------------------
 # AUTH & JWT
 # ------------------------------------
@@ -165,24 +175,42 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 USE_X_FORWARDED_HOST = True
+SECURE_SSL_REDIRECT = False
 
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_SECURE = True
+
+SECURE_BROWSER_XSS_FILTER = True
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+X_FRAME_OPTIONS = "DENY"
+
+
+# ------------------------------------
 # CORS & CSRF
 # ------------------------------------
-CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
+    "https://tbpsrdd-es-production-b2fa.up.railway.app",
+    "https://tbpsrdd-es-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://tbpsrdd-es-production.up.railway.app',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3001',
+    "https://tbpsrdd-es-production-b2fa.up.railway.app",
+    "https://tbpsrdd-es-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
 ]
 
 # ------------------------------------
@@ -226,32 +254,7 @@ LOGGING = {
     },
 }
 
-## ------------------------------------
-# CORS & CSRF
-# ------------------------------------
-from corsheaders.defaults import default_headers
 
-CORS_ALLOW_ALL_ORIGINS = False
-
-CORS_ALLOWED_ORIGINS = [
-    "https://tbpsrdd-es-production-b2fa.up.railway.app",
-    "https://tbpsrdd-es-production.up.railway.app",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://tbpsrdd-es-production-b2fa.up.railway.app",
-    "https://tbpsrdd-es-production.up.railway.app",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    "authorization",
-]
 # ------------------------------------
 # TWILIO SMS
 # ------------------------------------
