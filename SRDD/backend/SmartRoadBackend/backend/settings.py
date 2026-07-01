@@ -194,19 +194,19 @@ X_FRAME_OPTIONS = "DENY"
 CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
-    "https://tbpsrdd-es-production-b2fa.up.railway.app",
+    "https://tbpsrdd-backend-93820.up.railway.app",
     "https://tbpsrdd-es-production.up.railway.app",
+    "https://tbpsrdd-es-production-b2fa.up.railway.app",
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3000"
 ]
-
 CSRF_TRUSTED_ORIGINS = [
-    "https://tbpsrdd-es-production-b2fa.up.railway.app",
+    "https://tbpsrdd-backend-93820.up.railway.app",
     "https://tbpsrdd-es-production.up.railway.app",
-    "tbpsrdd-backend-93820.up.railway.app",
+    "https://tbpsrdd-es-production-b2fa.up.railway.app",
     "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+    "http://127.0.0.1:3000"
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
 
