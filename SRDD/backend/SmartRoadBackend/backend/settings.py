@@ -203,6 +203,7 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://tbpsrdd-es-production-b2fa.up.railway.app",
     "https://tbpsrdd-es-production.up.railway.app",
+    "tbpsrdd-backend-93820.up.railway.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
