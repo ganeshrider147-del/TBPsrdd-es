@@ -8,16 +8,19 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ------------------------------------
-# SECURITY
-# ------------------------------------
 SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-^dgp!k*#d333&lpvv-qo2320y0xq7em7vd7vb+tu-msjedqp*v'
+    "DJANGO_SECRET_KEY",
+    "django-insecure-^dgp!k*#d333&lpvv-qo2320y0xq7em7vd7vb+tu-msjedqp*v",
 )
-DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']
 
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+
+ALLOWED_HOSTS = [
+    "tbpsrdd-es-production.up.railway.app",
+    "tbpsrdd-es-production-b2fa.up.railway.app",
+    "localhost",
+    "127.0.0.1",
+]
 # ------------------------------------
 # APPLICATIONS
 # ------------------------------------
@@ -157,6 +160,11 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+USE_X_FORWARDED_HOST = True
 
 # CORS & CSRF
 # ------------------------------------
@@ -218,13 +226,32 @@ LOGGING = {
     },
 }
 
+## ------------------------------------
+# CORS & CSRF
 # ------------------------------------
-# CRON JOBS
-# ------------------------------------
-CRONJOBS = [
-    ('0 0 * * *', 'complaints.tasks.run_escalation_check')
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    "https://tbpsrdd-es-production-b2fa.up.railway.app",
+    "https://tbpsrdd-es-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://tbpsrdd-es-production-b2fa.up.railway.app",
+    "https://tbpsrdd-es-production.up.railway.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+]
 # ------------------------------------
 # TWILIO SMS
 # ------------------------------------
