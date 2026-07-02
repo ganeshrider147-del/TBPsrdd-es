@@ -16,15 +16,7 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = [
-    "tbpsrdd-backend-93820.up.railway.app",
-    "tbpsrdd-es-production.up.railway.app",
-    "tbpsrdd-es-production-b2fa.up.railway.app",
-    "localhost",
-    "127.0.0.1",
-    "*.railway.app",
-    "*.up.railway.app",
-]
+ALLOWED_HOSTS = ['*']
 # ------------------------------------
 # APPLICATIONS
 # ------------------------------------
