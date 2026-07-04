@@ -18,15 +18,18 @@ def _get_model():
     if _model is None:
         import sys
         import subprocess
+        import importlib
         if sys.platform.startswith('linux'):
             try:
                 import cv2
             except ImportError as e:
                 logger.info(f"Importing cv2 failed ({e}). Re-configuring opencv-python packages...")
                 try:
-                    subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True)
-                    subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless"], capture_output=True)
-                    logger.info("Successfully re-installed opencv-python-headless.")
+                    un_res = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True, text=True)
+                    in_res = subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless"], capture_output=True, text=True)
+                    importlib.invalidate_caches()
+                    logger.info(f"Uninstall result: code={un_res.returncode}, out={un_res.stdout.strip()}, err={un_res.stderr.strip()}")
+                    logger.info(f"Install result: code={in_res.returncode}, out={in_res.stdout.strip()}, err={in_res.stderr.strip()}")
                 except Exception as ex:
                     logger.error(f"Failed to fix opencv packages: {ex}")
 

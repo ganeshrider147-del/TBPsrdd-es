@@ -638,7 +638,8 @@ def debug_view(request):
         model = _get_model()
         model_classes = model.names
     except Exception as e:
-        model_classes = f"Error loading model: {e}"
+        import traceback
+        model_classes = f"Error loading model: {e}: {traceback.format_exc()}"
         
     return Response({
         "commit": commit,
