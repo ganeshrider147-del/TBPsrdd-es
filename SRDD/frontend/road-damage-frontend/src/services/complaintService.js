@@ -13,6 +13,7 @@ export const complaintService = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   getEscalated: () => api.get('complaints/escalated/'),
+  delete: (id) => api.delete(`complaints/${id}/`),
   submitFeedback: (id, rating, feedback_text) => api.put(`complaints/${id}/feedback/`, { rating, feedback_text }),
   downloadReport: async (id) => {
     const token = localStorage.getItem('access');

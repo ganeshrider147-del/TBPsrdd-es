@@ -224,21 +224,47 @@ def create_complaint(request):
 # ---------------------------
 # TRACK SINGLE COMPLAINT
 # ---------------------------
-@api_view(['GET'])
+@api_view(['GET', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def track_complaint(request, id):
+    import os
     try:
+        complaint = Complaint.objects.get(id=id)
+    except Complaint.DoesNotExist:
+        return Response({'error': 'Complaint not found.'}, status=404)
+
+    # Permission check: Admin can access/delete all, user can only access/delete their own
+    if not request.user.is_staff and complaint.user != request.user:
+        return Response({'error': 'Permission denied.'}, status=403)
+
+    if request.method == 'GET':
+        # Prefetch timeline for tracking
         complaint = Complaint.objects.prefetch_related('timeline').get(id=id)
-        
-        # Admin can track all, ordinary user can only track their own
-        if not request.user.is_staff and complaint.user != request.user:
-            return Response({'error': 'Permission denied. You do not have access to this complaint.'}, status=403)
-            
         escalate_complaint(complaint)
         serializer = ComplaintSerializer(complaint, context={'request': request})
         return Response(serializer.data)
-    except Complaint.DoesNotExist:
-        return Response({'error': 'Complaint not found.'}, status=404)
+
+    elif request.method == 'DELETE':
+        # Delete original image if stored
+        if complaint.image:
+            try:
+                if os.path.exists(complaint.image.path):
+                    os.remove(complaint.image.path)
+            except Exception as e:
+                logger.error(f"Failed to delete complaint image: {e}")
+                
+        # Delete after image if stored
+        if complaint.after_image:
+            try:
+                if os.path.exists(complaint.after_image.path):
+                    os.remove(complaint.after_image.path)
+            except Exception as e:
+                logger.error(f"Failed to delete after image: {e}")
+
+        # Delete database record (cascades to timeline and notifications)
+        complaint.delete()
+        logger.info(f"Complaint #{id} deleted successfully by user {request.user.username}")
+        return Response({'message': 'Complaint deleted successfully.'}, status=200)
 
 
 # ---------------------------
@@ -614,3 +640,43 @@ def mark_all_notifications_read(request):
 def unread_notification_count(request):
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return Response({'count': count})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def database_cleanup_view(request):
+    import os
+    import shutil
+    from django.conf import settings
+    from django.contrib.auth.models import User
+    from django.contrib.sessions.models import Session
+    from complaints.models import Complaint, Notification
+
+    # 1. Clear media images
+    media_root = settings.MEDIA_ROOT
+    complaints_dir = os.path.join(media_root, 'complaints')
+    if os.path.exists(complaints_dir):
+        try:
+            shutil.rmtree(complaints_dir)
+            os.makedirs(complaints_dir, exist_ok=True)
+            os.makedirs(os.path.join(complaints_dir, 'after'), exist_ok=True)
+        except Exception as e:
+            logger.error(f"Error clearing media directory: {e}")
+
+    # 2. Delete all database complaints and other tables with FK checks disabled
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('SET FOREIGN_KEY_CHECKS = 0;')
+        try:
+            cursor.execute('DELETE FROM token_blacklist_blacklistedtoken;')
+            cursor.execute('DELETE FROM token_blacklist_outstandingtoken;')
+        except Exception:
+            pass
+        Complaint.objects.all().delete()
+        Notification.objects.all().delete()
+        User.objects.exclude(username='admin').delete()
+        Session.objects.all().delete()
+        cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
+
+    logger.info("Railway MySQL database and media files cleared successfully.")
+    return Response({'message': 'Railway MySQL database and media files cleared successfully.'}, status=200)

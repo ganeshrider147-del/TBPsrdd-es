@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { complaintService } from '../services/complaintService';
 import { ROUTES } from '../constants/routes';
 import { getMediaUrl } from '../services/api';
+import { useToast } from '../context/ToastContext';
 
 const MyComplaints = () => {
     const [complaints, setComplaints] = useState([]);
@@ -11,6 +12,7 @@ const MyComplaints = () => {
     const [selectedStatus, setSelectedStatus] = useState('All');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const { addToast } = useToast();
 
     useEffect(() => {
         const fetchComplaints = async () => {
@@ -59,6 +61,28 @@ const MyComplaints = () => {
 
     const handleStatusFilter = (status) => {
         setSelectedStatus(status);
+    };
+
+    const handleDelete = async (id) => {
+        const confirmed = window.confirm("Are you sure you want to delete this complaint? This action cannot be undone.");
+        if (!confirmed) return;
+
+        try {
+            await complaintService.delete(id);
+            addToast({
+                title: "Success",
+                message: "Complaint deleted successfully.",
+                type: "success"
+            });
+            setComplaints(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            console.error('Error deleting complaint:', err);
+            addToast({
+                title: "Error",
+                message: "Failed to delete complaint. Please try again.",
+                type: "error"
+            });
+        }
     };
 
     return (
@@ -200,13 +224,22 @@ const MyComplaints = () => {
                                     </div>
                                     <div className="pt-md border-t border-slate-100 flex justify-between items-center">
                                         <span className="text-[11px] text-outline-variant font-medium">Damage Severity: {complaint.severity_level || 'Low'}</span>
-                                        <Link 
-                                            to={`${ROUTES.TRACK}?id=${complaint.id}`}
-                                            className="text-primary font-label-md flex items-center gap-1 hover:underline font-bold text-xs"
-                                        >
-                                            View details
-                                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                                        </Link>
+                                        <div className="flex items-center gap-md">
+                                            <button
+                                                onClick={() => handleDelete(complaint.id)}
+                                                className="text-error hover:text-rose-700 font-label-md flex items-center gap-0.5 hover:underline font-bold text-xs"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">delete</span>
+                                                Delete
+                                            </button>
+                                            <Link 
+                                                to={`${ROUTES.TRACK}?id=${complaint.id}`}
+                                                className="text-primary font-label-md flex items-center gap-1 hover:underline font-bold text-xs"
+                                            >
+                                                View details
+                                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
