@@ -9,12 +9,12 @@ logger = logging.getLogger(__name__)
 
 # Absolute path to model — works from any cwd
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), "best.pt")
-_model = None
+_pip_logs = []
 
 
 def _get_model():
     """Lazy-load the YOLO model (singleton)."""
-    global _model
+    global _model, _pip_logs
     if _model is None:
         import sys
         import subprocess
@@ -22,16 +22,17 @@ def _get_model():
         if sys.platform.startswith('linux'):
             try:
                 import cv2
+                _pip_logs.append("cv2 imported successfully on startup.")
             except ImportError as e:
-                logger.info(f"Importing cv2 failed ({e}). Re-configuring opencv-python packages...")
+                _pip_logs.append(f"Importing cv2 failed: {e}. Re-configuring...")
                 try:
                     un_res = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True, text=True)
+                    _pip_logs.append(f"Uninstall result: code={un_res.returncode}, out={un_res.stdout.strip()}, err={un_res.stderr.strip()}")
                     in_res = subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless"], capture_output=True, text=True)
+                    _pip_logs.append(f"Install result: code={in_res.returncode}, out={in_res.stdout.strip()}, err={in_res.stderr.strip()}")
                     importlib.invalidate_caches()
-                    logger.info(f"Uninstall result: code={un_res.returncode}, out={un_res.stdout.strip()}, err={un_res.stderr.strip()}")
-                    logger.info(f"Install result: code={in_res.returncode}, out={in_res.stdout.strip()}, err={in_res.stderr.strip()}")
                 except Exception as ex:
-                    logger.error(f"Failed to fix opencv packages: {ex}")
+                    _pip_logs.append(f"Failed to fix opencv packages: {ex}")
 
         from ultralytics import YOLO
         if not os.path.exists(_MODEL_PATH):

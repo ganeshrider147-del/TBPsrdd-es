@@ -633,6 +633,13 @@ def debug_view(request):
     except Exception as e:
         detector_code = f"Error reading detector.py: {e}"
         
+    pip_logs = []
+    try:
+        from complaints.detector import _pip_logs
+        pip_logs = _pip_logs
+    except Exception as e:
+        pip_logs = [f"Error getting pip logs: {e}"]
+
     try:
         from complaints.detector import _get_model
         model = _get_model()
@@ -644,5 +651,6 @@ def debug_view(request):
     return Response({
         "commit": commit,
         "model_classes": model_classes,
+        "pip_logs": pip_logs,
         "detector_code": detector_code[:1200]
     })
