@@ -17,7 +17,6 @@ from .views import (
     mark_notification_read,
     mark_all_notifications_read,
     unread_notification_count,
-    database_cleanup_view,
 )
 
 
@@ -52,5 +51,4 @@ urlpatterns = [
     path('notifications/unread-count/', unread_notification_count),
     path('notifications/mark-all-read/', mark_all_notifications_read),
     path('notifications/<int:id>/read/', mark_notification_read),
-    path('complaints/cleanup/', database_cleanup_view),
 ]
