@@ -16,6 +16,16 @@ def _get_model():
     """Lazy-load the YOLO model (singleton)."""
     global _model
     if _model is None:
+        import sys
+        import subprocess
+        if sys.platform.startswith('linux'):
+            try:
+                logger.info("Linux detected: Attempting to uninstall standard opencv-python to ensure headless fallback...")
+                res = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True, text=True)
+                logger.info(f"Uninstall result: {res.stdout.strip()} (err: {res.stderr.strip()})")
+            except Exception as e:
+                logger.warning(f"Failed to uninstall opencv-python: {e}")
+
         from ultralytics import YOLO
         if not os.path.exists(_MODEL_PATH):
             raise FileNotFoundError(f"YOLO model not found at: {_MODEL_PATH}")
