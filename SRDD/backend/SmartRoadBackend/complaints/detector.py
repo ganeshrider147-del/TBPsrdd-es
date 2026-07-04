@@ -20,11 +20,15 @@ def _get_model():
         import subprocess
         if sys.platform.startswith('linux'):
             try:
-                logger.info("Linux detected: Attempting to uninstall standard opencv-python to ensure headless fallback...")
-                res = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True, text=True)
-                logger.info(f"Uninstall result: {res.stdout.strip()} (err: {res.stderr.strip()})")
-            except Exception as e:
-                logger.warning(f"Failed to uninstall opencv-python: {e}")
+                import cv2
+            except ImportError as e:
+                logger.info(f"Importing cv2 failed ({e}). Re-configuring opencv-python packages...")
+                try:
+                    subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True)
+                    subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless"], capture_output=True)
+                    logger.info("Successfully re-installed opencv-python-headless.")
+                except Exception as ex:
+                    logger.error(f"Failed to fix opencv packages: {ex}")
 
         from ultralytics import YOLO
         if not os.path.exists(_MODEL_PATH):
