@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 # Absolute path to model — works from any cwd
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), "best.pt")
 _pip_logs = []
+_model = None
 
 
 def _get_model():
