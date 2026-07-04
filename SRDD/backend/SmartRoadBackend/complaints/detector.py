@@ -29,7 +29,7 @@ def _get_model():
                 try:
                     un_res = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True, text=True)
                     _pip_logs.append(f"Uninstall result: code={un_res.returncode}, out={un_res.stdout.strip()}, err={un_res.stderr.strip()}")
-                    in_res = subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless"], capture_output=True, text=True)
+                    in_res = subprocess.run([sys.executable, "-m", "pip", "install", "--force-reinstall", "opencv-python-headless"], capture_output=True, text=True)
                     _pip_logs.append(f"Install result: code={in_res.returncode}, out={in_res.stdout.strip()}, err={in_res.stderr.strip()}")
                     importlib.invalidate_caches()
                 except Exception as ex:
