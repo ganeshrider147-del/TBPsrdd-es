@@ -396,21 +396,41 @@ def upload_after_image(request, id):
     if 'after_image' not in request.FILES:
         return Response({'error': 'No image file provided.'}, status=400)
 
-    # Use serializer to validate, convert format, and save the image safely
-    serializer = ComplaintSerializer(instance=complaint, data={'after_image': request.FILES['after_image']}, partial=True, context={'request': request})
+    file_obj = request.FILES['after_image']
+    status = complaint.status
+
+    # Map the file to the correct ImageField and clean up the old file
+    if status in ['Pending', 'Assigned', 'Work Scheduled']:
+        if complaint.image and complaint.image.name:
+            try:
+                if os.path.exists(complaint.image.path):
+                    os.remove(complaint.image.path)
+            except Exception as e:
+                logger.error(f"Failed to delete old image during replacement: {e}")
+        data = {'image': file_obj}
+        timeline_status = 'Pending' if status == 'Pending' else status
+        remarks = 'Before repair photo updated/replaced.'
+    else:
+        if complaint.after_image and complaint.after_image.name:
+            try:
+                if os.path.exists(complaint.after_image.path):
+                    os.remove(complaint.after_image.path)
+            except Exception as e:
+                logger.error(f"Failed to delete old after_image during replacement: {e}")
+        data = {'after_image': file_obj}
+        if status in ['Completed', 'Closed', 'Repair Verification']:
+            timeline_status = 'Repair Verification'
+            remarks = 'Repair completion image uploaded for verification.'
+        else:
+            timeline_status = 'Work In Progress' if status == 'In Progress' else status
+            remarks = 'Repair progress image uploaded.'
+
+    # Use serializer to validate, convert format, and save safely
+    serializer = ComplaintSerializer(instance=complaint, data=data, partial=True, context={'request': request})
     if not serializer.is_valid():
         return Response(serializer.errors, status=400)
         
     complaint = serializer.save()
-
-    # Determine timeline status and remarks based on current status
-    status = complaint.status
-    if status in ['Completed', 'Closed', 'Repair Verification']:
-        timeline_status = 'Repair Verification'
-        remarks = 'Repair completion image uploaded for verification.'
-    else:
-        timeline_status = 'Work In Progress' if status == 'In Progress' else status
-        remarks = 'Repair progress image uploaded.'
 
     create_timeline_entry(
         complaint,

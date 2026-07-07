@@ -129,11 +129,7 @@ const AdminComplaints = () => {
                 estimated_completion: estimatedCompletion
             });
             
-            // If Completed, Closed or In Progress/Work Started and progress/verification image is attached
-            const isCompletedStatus = ['Completed', 'Closed'].includes(newStatus) || ['Completed', 'Closed'].includes(timelineStatus);
-            const isProgressStatus = ['In Progress', 'Work Started'].includes(newStatus) || ['Work In Progress', 'Work Started'].includes(timelineStatus);
-            
-            if ((isCompletedStatus || isProgressStatus) && afterImageFile) {
+            if (afterImageFile) {
                 const formData = new FormData();
                 formData.append('after_image', afterImageFile);
                 await complaintService.uploadAfterImage(selectedComplaint.id, formData);
@@ -789,23 +785,25 @@ const AdminComplaints = () => {
                             </div>
 
                              {/* Repair completed verifications image upload */}
-                            {(['Completed', 'Closed', 'In Progress', 'Work Started'].includes(newStatus) || ['Completed', 'Closed', 'Work In Progress', 'Work Started'].includes(timelineStatus)) && (
-                                <div className="space-y-xs p-md bg-emerald-50/50 rounded-xl border border-emerald-100">
-                                    <label className="block font-label-md text-emerald-800 font-bold text-[11px]" htmlFor="modal-after-image">
-                                        {['Completed', 'Closed'].includes(newStatus) ? 'Upload Verification Image (Post Repair Photo)' : 'Upload Work Progress Image (During Repair Photo)'}
-                                    </label>
-                                    <input 
-                                        id="modal-after-image"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) => setAfterImageFile(e.target.files[0])}
-                                        className="w-full text-[10px] text-slate-500 file:mr-md file:py-1.5 file:px-md file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200 cursor-pointer"
-                                    />
-                                    <p className="text-[9px] text-emerald-600 uppercase font-semibold">
-                                        {['Completed', 'Closed'].includes(newStatus) ? 'Restored road surface visual audit verification proof' : 'Active road repair operations progress audit photo'}
-                                    </p>
-                                </div>
-                            )}
+                            <div className="space-y-xs p-md bg-emerald-50/50 rounded-xl border border-emerald-100">
+                                <label className="block font-label-md text-emerald-800 font-bold text-[11px]" htmlFor="modal-after-image">
+                                    {['Completed', 'Closed'].includes(newStatus) ? 'Upload Verification Image (Post Repair Photo)' : 
+                                     ['In Progress', 'Work Started', 'Repair Verification'].includes(newStatus) ? 'Upload Work Progress Image (During Repair Photo)' : 
+                                     'Upload/Update Before Repair Image (Report Photo)'}
+                                </label>
+                                <input 
+                                    id="modal-after-image"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => setAfterImageFile(e.target.files[0])}
+                                    className="w-full text-[10px] text-slate-500 file:mr-md file:py-1.5 file:px-md file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200 cursor-pointer"
+                                />
+                                <p className="text-[9px] text-emerald-600 uppercase font-semibold">
+                                    {['Completed', 'Closed'].includes(newStatus) ? 'Restored road surface visual audit verification proof' : 
+                                     ['In Progress', 'Work Started', 'Repair Verification'].includes(newStatus) ? 'Active road repair operations progress audit photo' : 
+                                     'Initial road damage hazard verification photo'}
+                                </p>
+                            </div>
 
                             <div className="flex gap-md pt-sm border-t border-slate-100">
                                 <button 
