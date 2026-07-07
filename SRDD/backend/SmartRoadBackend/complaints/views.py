@@ -129,15 +129,20 @@ def create_complaint(request):
                 confidence = result.get('confidence', 0.0)
                 bounding_box = result.get('bounding_box')
 
-                # Determine if actual damage was found
-                damage_found = damage_type not in ['No Damage Detected', 'Unknown']
+                # Determine if actual damage was found (confidence must be > 0 and damage_type must be valid)
+                damage_found = (
+                    damage_type not in ['No Damage Detected', 'Unknown'] 
+                    and confidence > 0
+                )
 
-                # Severity from confidence (only if damage detected)
-                if not damage_found or confidence < 5:
+                # Severity from confidence (ONLY override if confidence is below threshold AND no damage detected)
+                # If model says it detected damage, trust it (don't force No Damage Detected)
+                if not damage_found or confidence < 1:
                     severity = 1
                     severity_level = 'Low'
                     priority = 'Low'
                     damage_type = 'No Damage Detected'
+                    confidence = 0
                 elif confidence >= 80:
                     severity = 5
                     severity_level = 'Critical'
@@ -155,11 +160,13 @@ def create_complaint(request):
                     severity_level = 'Low'
                     priority = 'Low'
                 else:
+                    # For detections between 1% and 20%, still mark as damage found but low priority
                     severity = 1
                     severity_level = 'Low'
                     priority = 'Low'
 
-                if damage_found and confidence >= 5:
+                # Build AI summary based on whether damage was detected
+                if damage_found:
                     ai_summary = (
                         f"Computer vision analysis classified this road hazard as: {damage_type}. "
                         f"Confidence score: {confidence}%. "
@@ -190,7 +197,11 @@ def create_complaint(request):
                 error_tb = traceback.format_exc()
                 logger.error(f"AI detection failed for complaint #{complaint.id}: {error_tb}")
                 complaint.detected_damage = 'No Damage Detected'
-                complaint.ai_summary = f"AI analysis failed: {str(e)}\n\nTraceback:\n{error_tb}"
+                complaint.confidence = 0
+                complaint.severity = 1
+                complaint.severity_level = 'Low'
+                complaint.priority = 'Low'
+                complaint.ai_summary = f"AI analysis error (will retry on review): {str(e)}"
                 complaint.save()
 
         # Create initial timeline entry
@@ -229,7 +240,6 @@ def create_complaint(request):
 @api_view(['GET', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def track_complaint(request, id):
-    import os
     try:
         complaint = Complaint.objects.get(id=id)
     except Complaint.DoesNotExist:
@@ -247,25 +257,11 @@ def track_complaint(request, id):
         return Response(serializer.data)
 
     elif request.method == 'DELETE':
-        # Delete original image if stored
-        if complaint.image and complaint.image.name:
-            try:
-                if os.path.exists(complaint.image.path):
-                    os.remove(complaint.image.path)
-            except Exception as e:
-                logger.error(f"Failed to delete complaint image: {e}")
-                
-        # Delete after image if stored
-        if complaint.after_image and complaint.after_image.name:
-            try:
-                if os.path.exists(complaint.after_image.path):
-                    os.remove(complaint.after_image.path)
-            except Exception as e:
-                logger.error(f"Failed to delete after image: {e}")
-
         # Delete database record (cascades to timeline and notifications)
+        # Django will handle file cleanup via ImageField's delete signal
+        complaint_id = complaint.id
         complaint.delete()
-        logger.info(f"Complaint #{id} deleted successfully by user {request.user.username}")
+        logger.info(f"Complaint #{complaint_id} deleted successfully by user {request.user.username}")
         return Response(status=204)
 
 
@@ -401,24 +397,13 @@ def upload_after_image(request, id):
     file_obj = request.FILES['after_image']
     status = complaint.status
 
-    # Map the file to the correct ImageField and clean up the old file
+    # Map the file to the correct ImageField based on status
+    # Django's ImageField will automatically delete the old file when replaced
     if status in ['Pending', 'Assigned', 'Work Scheduled']:
-        if complaint.image and complaint.image.name:
-            try:
-                if os.path.exists(complaint.image.path):
-                    os.remove(complaint.image.path)
-            except Exception as e:
-                logger.error(f"Failed to delete old image during replacement: {e}")
         data = {'image': file_obj}
         timeline_status = 'Pending' if status == 'Pending' else status
         remarks = 'Before repair photo updated/replaced.'
     else:
-        if complaint.after_image and complaint.after_image.name:
-            try:
-                if os.path.exists(complaint.after_image.path):
-                    os.remove(complaint.after_image.path)
-            except Exception as e:
-                logger.error(f"Failed to delete old after_image during replacement: {e}")
         data = {'after_image': file_obj}
         if status in ['Completed', 'Closed', 'Repair Verification']:
             timeline_status = 'Repair Verification'
@@ -431,7 +416,8 @@ def upload_after_image(request, id):
     serializer = ComplaintSerializer(instance=complaint, data=data, partial=True, context={'request': request})
     if not serializer.is_valid():
         return Response(serializer.errors, status=400)
-        
+    
+    # Django's ImageField automatically handles old file cleanup when a new file is assigned    
     complaint = serializer.save()
 
     create_timeline_entry(
@@ -680,15 +666,15 @@ def unread_notification_count(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def diagnose_ai(request):
-    import sys
-    import os
-    import torch
-    from PIL import Image
-    from ultralytics import YOLO
-    
     diagnostic_info = {}
     
     try:
+        import sys
+        import os
+        import torch
+        from PIL import Image
+        from ultralytics import YOLO
+        
         diagnostic_info['python_version'] = sys.version
         diagnostic_info['pytorch_version'] = torch.__version__
         diagnostic_info['cuda_available'] = torch.cuda.is_available()
