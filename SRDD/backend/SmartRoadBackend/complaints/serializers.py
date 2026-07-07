@@ -61,7 +61,10 @@ class ComplaintSerializer(serializers.ModelSerializer):
         if instance.image:
             url = instance.image.url
             if request:
-                representation['image'] = request.build_absolute_uri(url)
+                abs_url = request.build_absolute_uri(url)
+                if 'localhost' not in abs_url and '127.0.0.1' not in abs_url:
+                    abs_url = abs_url.replace('http://', 'https://')
+                representation['image'] = abs_url
             else:
                 representation['image'] = f"http://localhost:8000{url}"
         else:
@@ -71,7 +74,10 @@ class ComplaintSerializer(serializers.ModelSerializer):
         if instance.after_image:
             url = instance.after_image.url
             if request:
-                representation['after_image'] = request.build_absolute_uri(url)
+                abs_url = request.build_absolute_uri(url)
+                if 'localhost' not in abs_url and '127.0.0.1' not in abs_url:
+                    abs_url = abs_url.replace('http://', 'https://')
+                representation['after_image'] = abs_url
             else:
                 representation['after_image'] = f"http://localhost:8000{url}"
         else:

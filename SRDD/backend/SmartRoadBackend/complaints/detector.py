@@ -15,26 +15,8 @@ _model = None
 
 def _get_model():
     """Lazy-load the YOLO model (singleton)."""
-    global _model, _pip_logs
+    global _model
     if _model is None:
-        import sys
-        import subprocess
-        import importlib
-        if sys.platform.startswith('linux'):
-            try:
-                import cv2
-                _pip_logs.append("cv2 imported successfully on startup.")
-            except ImportError as e:
-                _pip_logs.append(f"Importing cv2 failed: {e}. Re-configuring...")
-                try:
-                    un_res = subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"], capture_output=True, text=True)
-                    _pip_logs.append(f"Uninstall result: code={un_res.returncode}, out={un_res.stdout.strip()}, err={un_res.stderr.strip()}")
-                    in_res = subprocess.run([sys.executable, "-m", "pip", "install", "--force-reinstall", "opencv-python-headless"], capture_output=True, text=True)
-                    _pip_logs.append(f"Install result: code={in_res.returncode}, out={in_res.stdout.strip()}, err={in_res.stderr.strip()}")
-                    importlib.invalidate_caches()
-                except Exception as ex:
-                    _pip_logs.append(f"Failed to fix opencv packages: {ex}")
-
         from ultralytics import YOLO
         if not os.path.exists(_MODEL_PATH):
             raise FileNotFoundError(f"YOLO model not found at: {_MODEL_PATH}")
@@ -55,7 +37,8 @@ def detect_damage(image_path):
     """
     try:
         model = _get_model()
-        results = model(image_path, verbose=False)
+        # Run with confidence threshold 0.05 to prevent 'No Damage' false negatives
+        results = model(image_path, conf=0.05, verbose=False)
 
         damage_type = "No Damage Detected"
         confidence = 0.0
