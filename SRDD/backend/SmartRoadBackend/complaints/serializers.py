@@ -63,7 +63,9 @@ class ComplaintSerializer(serializers.ModelSerializer):
         # Build absolute URL for image
         if instance.image:
             url = instance.image.url
-            if settings.DEBUG:
+            if url.startswith('http://') or url.startswith('https://'):
+                representation['image'] = url
+            elif settings.DEBUG:
                 if request:
                     representation['image'] = request.build_absolute_uri(url)
                 else:
@@ -76,7 +78,9 @@ class ComplaintSerializer(serializers.ModelSerializer):
         # Build absolute URL for after_image
         if instance.after_image:
             url = instance.after_image.url
-            if settings.DEBUG:
+            if url.startswith('http://') or url.startswith('https://'):
+                representation['after_image'] = url
+            elif settings.DEBUG:
                 if request:
                     representation['after_image'] = request.build_absolute_uri(url)
                 else:
@@ -140,7 +144,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
                 raise ValidationError(f"Unsupported image format: {img_format}. Allowed formats: JPG, JPEG, PNG, WEBP, BMP, GIF, TIFF.")
                 
             # If standard web format, return it
-            if img_format in ['JPEG', 'PNG', 'WEBP', 'GIF']:
+            if img_format in ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF']:
                 value.seek(0)
                 return value
                 

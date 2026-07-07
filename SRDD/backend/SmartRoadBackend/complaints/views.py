@@ -122,7 +122,7 @@ def create_complaint(request):
         complaint = serializer.save(user=request.user)
 
         # Run AI detection
-        if complaint.image:
+        if complaint.image and complaint.image.name:
             try:
                 result = detect_damage(complaint.image.path)
                 damage_type = result.get('damage_type', 'No Damage Detected')
@@ -246,7 +246,7 @@ def track_complaint(request, id):
 
     elif request.method == 'DELETE':
         # Delete original image if stored
-        if complaint.image:
+        if complaint.image and complaint.image.name:
             try:
                 if os.path.exists(complaint.image.path):
                     os.remove(complaint.image.path)
@@ -254,7 +254,7 @@ def track_complaint(request, id):
                 logger.error(f"Failed to delete complaint image: {e}")
                 
         # Delete after image if stored
-        if complaint.after_image:
+        if complaint.after_image and complaint.after_image.name:
             try:
                 if os.path.exists(complaint.after_image.path):
                     os.remove(complaint.after_image.path)
