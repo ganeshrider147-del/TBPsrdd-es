@@ -399,11 +399,20 @@ def upload_after_image(request, id):
     complaint.after_image = request.FILES['after_image']
     complaint.save()
 
+    # Determine timeline status and remarks based on current status
+    status = complaint.status
+    if status in ['Completed', 'Closed', 'Repair Verification']:
+        timeline_status = 'Repair Verification'
+        remarks = 'Repair completion image uploaded for verification.'
+    else:
+        timeline_status = 'Work In Progress' if status == 'In Progress' else status
+        remarks = 'Repair progress image uploaded.'
+
     create_timeline_entry(
         complaint,
-        'Repair Verification',
+        timeline_status,
         officer=request.data.get('officer', 'Admin'),
-        remarks='Repair completion image uploaded for verification.'
+        remarks=remarks
     )
 
     return Response(ComplaintSerializer(complaint, context={'request': request}).data)

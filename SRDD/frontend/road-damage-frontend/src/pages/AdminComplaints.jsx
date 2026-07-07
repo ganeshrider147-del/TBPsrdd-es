@@ -131,7 +131,7 @@ const AdminComplaints = () => {
             
             // If Completed, Closed or In Progress/Work Started and progress/verification image is attached
             const isCompletedStatus = ['Completed', 'Closed'].includes(newStatus) || ['Completed', 'Closed'].includes(timelineStatus);
-            const isProgressStatus = ['In Progress', 'Work Started'].includes(newStatus);
+            const isProgressStatus = ['In Progress', 'Work Started'].includes(newStatus) || ['Work In Progress', 'Work Started'].includes(timelineStatus);
             
             if ((isCompletedStatus || isProgressStatus) && afterImageFile) {
                 const formData = new FormData();
@@ -153,6 +153,27 @@ const AdminComplaints = () => {
         } catch (err) {
             console.error('Error updating status:', err);
             setError('Failed to update complaint status.');
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
+    const handleDeleteComplaint = async (id) => {
+        const confirmed = window.confirm(`Are you sure you want to delete complaint #RD-${id}? This action cannot be undone.`);
+        if (!confirmed) return;
+
+        setIsActionLoading(true);
+        setError('');
+        setSuccessMessage('');
+        try {
+            await complaintService.delete(id);
+            setSuccessMessage(`Complaint #RD-${id} deleted successfully.`);
+            setSelectedComplaint(null);
+            setComplaints(prev => prev.filter(c => c.id !== id));
+            setFilteredComplaints(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            console.error("Failed to delete complaint:", err);
+            setError(err.response?.data?.error || "Failed to delete complaint. Please try again.");
         } finally {
             setIsActionLoading(false);
         }
@@ -577,23 +598,18 @@ const AdminComplaints = () => {
                                     Update Status & Timelines
                                 </button>
                                 <button 
-                                    onClick={async () => {
-                                        if (window.confirm(`Are you sure you want to delete complaint #RD-${selectedComplaint.id}?`)) {
-                                            try {
-                                                await complaintService.delete(selectedComplaint.id);
-                                                setSuccessMessage(`Complaint #RD-${selectedComplaint.id} deleted successfully.`);
-                                                setSelectedComplaint(null);
-                                                fetchComplaints(); // Refresh operations list
-                                            } catch (err) {
-                                                console.error("Failed to delete complaint:", err);
-                                                setError("Failed to delete complaint.");
-                                            }
-                                        }
-                                    }}
-                                    className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-label-md font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-xs cursor-pointer text-xs"
+                                    onClick={() => handleDeleteComplaint(selectedComplaint.id)}
+                                    disabled={isActionLoading}
+                                    className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-label-md font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-xs cursor-pointer text-xs disabled:opacity-50"
                                 >
-                                    <span className="material-symbols-outlined text-sm">delete</span>
-                                    Delete Complaint
+                                    {isActionLoading ? (
+                                        <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-sm">delete</span>
+                                            Delete Complaint
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </>

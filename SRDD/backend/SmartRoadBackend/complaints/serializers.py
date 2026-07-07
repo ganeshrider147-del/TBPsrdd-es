@@ -56,30 +56,33 @@ class ComplaintSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         request = self.context.get('request')
+        from django.conf import settings
+        
+        PROD_BACKEND_URL = "https://tbpsrdd-backend-93820.up.railway.app"
         
         # Build absolute URL for image
         if instance.image:
             url = instance.image.url
-            if request:
-                abs_url = request.build_absolute_uri(url)
-                if 'localhost' not in abs_url and '127.0.0.1' not in abs_url:
-                    abs_url = abs_url.replace('http://', 'https://')
-                representation['image'] = abs_url
+            if settings.DEBUG:
+                if request:
+                    representation['image'] = request.build_absolute_uri(url)
+                else:
+                    representation['image'] = f"http://localhost:8000{url}"
             else:
-                representation['image'] = f"http://localhost:8000{url}"
+                representation['image'] = f"{PROD_BACKEND_URL}{url}"
         else:
             representation['image'] = None
 
         # Build absolute URL for after_image
         if instance.after_image:
             url = instance.after_image.url
-            if request:
-                abs_url = request.build_absolute_uri(url)
-                if 'localhost' not in abs_url and '127.0.0.1' not in abs_url:
-                    abs_url = abs_url.replace('http://', 'https://')
-                representation['after_image'] = abs_url
+            if settings.DEBUG:
+                if request:
+                    representation['after_image'] = request.build_absolute_uri(url)
+                else:
+                    representation['after_image'] = f"http://localhost:8000{url}"
             else:
-                representation['after_image'] = f"http://localhost:8000{url}"
+                representation['after_image'] = f"{PROD_BACKEND_URL}{url}"
         else:
             representation['after_image'] = None
             
@@ -107,10 +110,24 @@ class ComplaintSerializer(serializers.ModelSerializer):
         from PIL import Image
         import io
         from django.core.files.uploadedfile import InMemoryUploadedFile
+        from rest_framework.exceptions import ValidationError
         
+        ALLOWED_FORMATS = {
+            'JPEG': 'image/jpeg',
+            'JPG': 'image/jpeg',
+            'PNG': 'image/png',
+            'WEBP': 'image/webp',
+            'BMP': 'image/bmp',
+            'GIF': 'image/gif',
+            'TIFF': 'image/tiff',
+            'TIF': 'image/tiff',
+        }
+
         try:
             from pi_heif import register_heif_opener
             register_heif_opener()
+            ALLOWED_FORMATS['HEIF'] = 'image/heic'
+            ALLOWED_FORMATS['HEIC'] = 'image/heic'
         except Exception:
             pass
 
@@ -119,12 +136,15 @@ class ComplaintSerializer(serializers.ModelSerializer):
             img = Image.open(value)
             img_format = (img.format or "").upper()
             
-            # Keep standard web formats
-            if img_format in ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF']:
+            if img_format not in ALLOWED_FORMATS:
+                raise ValidationError(f"Unsupported image format: {img_format}. Allowed formats: JPG, JPEG, PNG, WEBP, BMP, GIF, TIFF.")
+                
+            # If standard web format, return it
+            if img_format in ['JPEG', 'PNG', 'WEBP', 'GIF']:
                 value.seek(0)
                 return value
                 
-            # Convert non-web images (HEIC, TIFF, BMP, etc.) to JPEG
+            # Convert non-web images (BMP, TIFF, HEIC, etc.) to JPEG
             buffer = io.BytesIO()
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
@@ -134,7 +154,6 @@ class ComplaintSerializer(serializers.ModelSerializer):
             img.save(buffer, format='JPEG', quality=90)
             buffer.seek(0)
             
-            # Construct new name with .jpg
             name = value.name
             dot_idx = name.rfind('.')
             if dot_idx != -1:
@@ -151,7 +170,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
                 charset=None
             )
             return new_file
+        except ValidationError:
+            raise
         except Exception as e:
-            # Fallback
-            value.seek(0)
-            return value
+            raise ValidationError("Invalid image file or unsupported format.")
