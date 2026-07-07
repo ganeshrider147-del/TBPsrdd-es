@@ -143,16 +143,18 @@ def create_complaint(request):
                 confidence = result.get('confidence', 0.0)
                 bounding_box = result.get('bounding_box')
                 annotated_image_path = result.get('annotated_image_path')
+
+                logger.info("damage_type=%s", damage_type)
+                logger.info("confidence=%s", confidence)
+                logger.info("bounding_box=%s", bounding_box)
+                logger.info("annotated_image_path=%s", annotated_image_path)
                 
                 logger.info(f"Detection result: damage_type={damage_type}, confidence={confidence}%, has_bbox={bounding_box is not None}")
                 
-                # Determine if actual damage was found
-                damage_found = (
-                    damage_type not in ['No Damage Detected', 'Unknown'] 
-                    and confidence > 0
-                )
+                # Determine if actual damage was found from the detector output without applying any extra threshold.
+                damage_found = damage_type not in ['No Damage Detected', 'Unknown']
                 
-                logger.info(f"Damage found: {damage_found}, confidence threshold check: {confidence} > 0")
+                logger.info(f"Damage found: {damage_found}")
 
                 # CRITICAL: Calculate severity based on confidence
                 # Do NOT override good detections with "No Damage Detected"
