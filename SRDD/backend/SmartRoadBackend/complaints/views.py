@@ -264,7 +264,7 @@ def track_complaint(request, id):
         # Delete database record (cascades to timeline and notifications)
         complaint.delete()
         logger.info(f"Complaint #{id} deleted successfully by user {request.user.username}")
-        return Response({'message': 'Complaint deleted successfully.'}, status=200)
+        return Response(status=204)
 
 
 # ---------------------------
