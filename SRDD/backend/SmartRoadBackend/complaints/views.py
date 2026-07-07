@@ -396,8 +396,12 @@ def upload_after_image(request, id):
     if 'after_image' not in request.FILES:
         return Response({'error': 'No image file provided.'}, status=400)
 
-    complaint.after_image = request.FILES['after_image']
-    complaint.save()
+    # Use serializer to validate, convert format, and save the image safely
+    serializer = ComplaintSerializer(instance=complaint, data={'after_image': request.FILES['after_image']}, partial=True, context={'request': request})
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=400)
+        
+    complaint = serializer.save()
 
     # Determine timeline status and remarks based on current status
     status = complaint.status

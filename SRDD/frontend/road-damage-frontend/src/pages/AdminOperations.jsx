@@ -375,7 +375,9 @@ const AdminOperations = () => {
                                                                 try {
                                                                     await complaintService.delete(complaint.id);
                                                                     setSuccessMessage(`Complaint #RD-${complaint.id} deleted successfully.`);
-                                                                    fetchComplaints();
+                                                                    setComplaints(prev => prev.filter(c => c.id !== complaint.id));
+                                                                    setFilteredComplaints(prev => prev.filter(c => c.id !== complaint.id));
+                                                                    fetchAdminData();
                                                                 } catch (err) {
                                                                     console.error("Failed to delete complaint:", err);
                                                                     setError("Failed to delete complaint.");
