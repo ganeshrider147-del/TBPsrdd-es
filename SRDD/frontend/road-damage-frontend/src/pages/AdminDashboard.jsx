@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { dashboardService } from '../services/dashboardService';
 import { complaintService } from '../services/complaintService';
 import { ROUTES } from '../constants/routes';
+import { getMediaUrl } from '../services/api';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({ total: 0, pending: 0, in_progress: 0, completed: 0, escalated: 0, repair_verification: 0 });
@@ -238,7 +239,7 @@ const AdminDashboard = () => {
                                                 <div className="flex items-center gap-md">
                                                     <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-100 flex-shrink-0 bg-slate-50 flex items-center justify-center text-slate-300">
                                                         {complaint.image ? (
-                                                            <img className="w-full h-full object-cover" alt="hazard" src={complaint.image} />
+                                                            <img className="w-full h-full object-cover" alt="hazard" src={getMediaUrl(complaint.image)} />
                                                         ) : (
                                                             <span className="material-symbols-outlined text-xl">image</span>
                                                         )}

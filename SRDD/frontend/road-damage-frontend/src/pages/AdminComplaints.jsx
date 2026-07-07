@@ -405,7 +405,7 @@ const AdminComplaints = () => {
                                                     <div className="flex items-center gap-md">
                                                         <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-100 flex-shrink-0 bg-slate-50 flex items-center justify-center text-slate-300">
                                                             {complaint.image ? (
-                                                                <img className="w-full h-full object-cover" alt="hazard" src={complaint.image} />
+                                                                <img className="w-full h-full object-cover" alt="hazard" src={getMediaUrl(complaint.image)} />
                                                             ) : (
                                                                 <span className="material-symbols-outlined text-lg">image</span>
                                                             )}
