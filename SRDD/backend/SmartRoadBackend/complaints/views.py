@@ -140,10 +140,23 @@ def create_complaint(request):
                 logger.info("Calling detect_damage...")
                 result = detect_damage(complaint.image.path, save_annotated_path=annotated_path)
                 
-                damage_type = result.get('damage_type', 'No Damage Detected')
-                confidence = result.get('confidence', 0.0)
-                bounding_box = result.get('bounding_box')
-                annotated_image_path = result.get('annotated_image_path')
+                if isinstance(result, list):
+                    if result:
+                        top_detection = max(result, key=lambda item: item.get('confidence', 0.0))
+                        damage_type = top_detection.get('damage_type', 'No Damage Detected')
+                        confidence = top_detection.get('confidence', 0.0)
+                        bounding_box = top_detection.get('bounding_box')
+                        annotated_image_path = top_detection.get('annotated_image_path')
+                    else:
+                        damage_type = 'No Damage Detected'
+                        confidence = 0.0
+                        bounding_box = None
+                        annotated_image_path = None
+                else:
+                    damage_type = result.get('damage_type', 'No Damage Detected')
+                    confidence = result.get('confidence', 0.0)
+                    bounding_box = result.get('bounding_box')
+                    annotated_image_path = result.get('annotated_image_path')
 
                 logger.info("damage_type=%s", damage_type)
                 logger.info("confidence=%s", confidence)
