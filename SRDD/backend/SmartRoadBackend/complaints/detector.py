@@ -95,8 +95,9 @@ def detect_damage(image_path, save_annotated_path=None):
         confidence = 0.0
         bounding_box = None
         best_result = None
+        best_confidence = 0.0
 
-        # Process results
+        # Process all YOLO detections and keep the best valid road damage class
         for result_idx, result in enumerate(results):
             num_boxes = len(result.boxes) if result.boxes is not None else 0
             logger.info(f"[DETECT] Result {result_idx}: found {num_boxes} detection(s)")
@@ -105,7 +106,6 @@ def detect_damage(image_path, save_annotated_path=None):
                 logger.info(f"[DETECT]   → No boxes in result {result_idx}")
                 continue
 
-            # Take the highest-confidence detection
             boxes = result.boxes
             best_idx = int(boxes.conf.argmax().item())
             cls = int(boxes.cls[best_idx].item())
@@ -127,30 +127,37 @@ def detect_damage(image_path, save_annotated_path=None):
                 logger.error(f"[DETECT] ❌ Error accessing class name at index {cls}: {e}", exc_info=True)
                 raw_name = f"Class_{cls}"
             
-            logger.info(f"[DETECT] → Best detection: class_id={cls}, class_name='{raw_name}', conf={conf:.4f} (raw)")
+            logger.info(f"[DETECT] → Candidate detection: class_id={cls}, class_name='{raw_name}', conf={conf:.4f} (raw)")
 
             # Normalize class names to standard labels
             name_lower = raw_name.lower()
             if any(x in name_lower for x in ["pothole", "pot hole", "hole", "pit"]):
-                damage_type = "Pothole"
+                candidate_damage_type = "Pothole"
             elif any(x in name_lower for x in ["crack", "alligator", "linear", "fracture", "longitudinal", "transverse"]):
-                damage_type = "Crack"
+                candidate_damage_type = "Crack"
             elif any(x in name_lower for x in ["surface", "damage", "road"]):
-                damage_type = "Surface Damage"
+                candidate_damage_type = "Surface Damage"
             else:
-                # Only set to "No Damage Detected" if explicitly named as such
-                if raw_name.lower() in ["background", "no damage", "nodamage"]:
-                    damage_type = "No Damage Detected"
-                else:
-                    damage_type = raw_name.title()
+                # Ignore background / no-damage classes entirely
+                if name_lower in ["background", "no damage", "nodamage", "none", ""]:
+                    logger.info(f"[DETECT]   Ignoring background/no-damage class: {raw_name}")
+                    continue
+                candidate_damage_type = raw_name.title()
 
-            confidence = round(conf * 100, 2)
-            bounding_box = [round(v, 1) for v in box]
-            best_result = result  # Save result for annotation
-            
-            logger.info(f"[DETECT] ✓ DETECTED: {damage_type} @ {confidence}%")
-            logger.info(f"[DETECT]   Bounding box: {bounding_box}")
-            break  # Use first (highest confidence) detection
+            candidate_confidence = round(conf * 100, 2)
+            candidate_box = [round(v, 1) for v in box]
+
+            # Keep the highest-confidence valid damage detection across all boxes
+            if candidate_confidence > best_confidence:
+                damage_type = candidate_damage_type
+                confidence = candidate_confidence
+                bounding_box = candidate_box
+                best_result = result
+                best_confidence = candidate_confidence
+                logger.info(f"[DETECT] ✓ Selected as best valid damage: {damage_type} @ {confidence}%")
+                logger.info(f"[DETECT]   Bounding box: {bounding_box}")
+            else:
+                logger.info(f"[DETECT]   Lower confidence than current best; skipping: {candidate_damage_type} @ {candidate_confidence}%")
 
         if damage_type == "No Damage Detected":
             logger.info(f"[DETECT] ⚠ No damage detected in this image")
