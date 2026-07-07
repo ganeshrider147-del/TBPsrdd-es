@@ -80,9 +80,6 @@ def detect_damage(image_path):
             "bounding_box": bounding_box,
         }
 
-    except FileNotFoundError as e:
-        logger.error(f"YOLO model file not found: {e}")
-        return {"damage_type": "No Damage Detected", "confidence": 0.0, "bounding_box": None}
     except Exception as e:
         logger.error(f"YOLO inference error: {e}")
-        return {"damage_type": "No Damage Detected", "confidence": 0.0, "bounding_box": None}
+        raise e
