@@ -36,9 +36,12 @@ def detect_damage(image_path):
             - bounding_box (list|None): [x1, y1, x2, y2] in pixels
     """
     try:
+        from PIL import Image
         model = _get_model()
+        # Load image via Pillow for multi-format safety
+        img = Image.open(image_path)
         # Run with confidence threshold 0.05 to prevent 'No Damage' false negatives
-        results = model(image_path, conf=0.05, verbose=False)
+        results = model(img, conf=0.05, verbose=False)
 
         damage_type = "No Damage Detected"
         confidence = 0.0

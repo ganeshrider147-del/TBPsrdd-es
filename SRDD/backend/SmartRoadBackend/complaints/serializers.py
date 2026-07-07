@@ -92,3 +92,66 @@ class ComplaintSerializer(serializers.ModelSerializer):
         if obj.user:
             return obj.user.username
         return None
+
+    def validate_image(self, value):
+        if value:
+            return self._normalize_image(value)
+        return value
+
+    def validate_after_image(self, value):
+        if value:
+            return self._normalize_image(value)
+        return value
+
+    def _normalize_image(self, value):
+        from PIL import Image
+        import io
+        from django.core.files.uploadedfile import InMemoryUploadedFile
+        
+        try:
+            from pi_heif import register_heif_opener
+            register_heif_opener()
+        except Exception:
+            pass
+
+        try:
+            value.seek(0)
+            img = Image.open(value)
+            img_format = (img.format or "").upper()
+            
+            # Keep standard web formats
+            if img_format in ['JPEG', 'JPG', 'PNG', 'WEBP', 'GIF']:
+                value.seek(0)
+                return value
+                
+            # Convert non-web images (HEIC, TIFF, BMP, etc.) to JPEG
+            buffer = io.BytesIO()
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            elif img.mode == 'CMYK':
+                img = img.convert('RGB')
+                
+            img.save(buffer, format='JPEG', quality=90)
+            buffer.seek(0)
+            
+            # Construct new name with .jpg
+            name = value.name
+            dot_idx = name.rfind('.')
+            if dot_idx != -1:
+                name = name[:dot_idx] + '.jpg'
+            else:
+                name = name + '.jpg'
+                
+            new_file = InMemoryUploadedFile(
+                buffer,
+                field_name=value.field_name,
+                name=name,
+                content_type='image/jpeg',
+                size=buffer.getbuffer().nbytes,
+                charset=None
+            )
+            return new_file
+        except Exception as e:
+            # Fallback
+            value.seek(0)
+            return value

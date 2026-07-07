@@ -369,6 +369,24 @@ const AdminOperations = () => {
                                                     >
                                                         <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                     </Link>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (window.confirm(`Are you sure you want to delete complaint #RD-${complaint.id}?`)) {
+                                                                try {
+                                                                    await complaintService.delete(complaint.id);
+                                                                    setSuccessMessage(`Complaint #RD-${complaint.id} deleted successfully.`);
+                                                                    fetchComplaints();
+                                                                } catch (err) {
+                                                                    console.error("Failed to delete complaint:", err);
+                                                                    setError("Failed to delete complaint.");
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg inline-flex items-center cursor-pointer"
+                                                        title="Delete Complaint"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>

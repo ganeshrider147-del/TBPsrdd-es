@@ -129,8 +129,11 @@ const AdminComplaints = () => {
                 estimated_completion: estimatedCompletion
             });
             
-            // If Completed and verification image is attached
-            if ((newStatus === 'Completed' || timelineStatus === 'Completed') && afterImageFile) {
+            // If Completed, Closed or In Progress/Work Started and progress/verification image is attached
+            const isCompletedStatus = ['Completed', 'Closed'].includes(newStatus) || ['Completed', 'Closed'].includes(timelineStatus);
+            const isProgressStatus = ['In Progress', 'Work Started'].includes(newStatus);
+            
+            if ((isCompletedStatus || isProgressStatus) && afterImageFile) {
                 const formData = new FormData();
                 formData.append('after_image', afterImageFile);
                 await complaintService.uploadAfterImage(selectedComplaint.id, formData);
@@ -482,14 +485,18 @@ const AdminComplaints = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-xs">
-                                    <span className="text-[10px] text-outline font-bold uppercase">After Repair</span>
+                                    <span className="text-[10px] text-outline font-bold uppercase">
+                                        {['Completed', 'Closed', 'Repair Verification'].includes(selectedComplaint.status) ? 'After Repair' : 'During Repair / Work Progress'}
+                                    </span>
                                     <div className="aspect-[4/3] rounded-lg overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
                                         {selectedComplaint.after_image ? (
                                             <a href={getMediaUrl(selectedComplaint.after_image)} target="_blank" rel="noreferrer">
                                                 <img className="w-full h-full object-cover hover:scale-105 transition-transform" alt="after" src={getMediaUrl(selectedComplaint.after_image)} />
                                             </a>
                                         ) : (
-                                            <span className="text-outline text-[11px] font-medium text-center px-xs">Awaiting Completion Verification</span>
+                                            <span className="text-outline text-[11px] font-medium text-center px-xs">
+                                                {['In Progress', 'Work Started'].includes(selectedComplaint.status) ? 'No Progress Image Uploaded' : 'Awaiting Completion Verification'}
+                                            </span>
                                         )}
                                     </div>
                                 </div>
@@ -548,26 +555,47 @@ const AdminComplaints = () => {
                                 </div>
                             </div>
 
-                            {/* CTA Action button */}
-                            <button 
-                                onClick={() => {
-                                    setNewStatus(selectedComplaint.status);
-                                    setTimelineStatus(selectedComplaint.status === 'Pending' ? 'Submitted' : selectedComplaint.status);
-                                    setOfficer(selectedComplaint.assigned_officer || 'Zonal Inspector');
-                                    setDepartment(selectedComplaint.assigned_team || 'Municipal Roads Dept');
-                                    setRemarks(`Timeline update for complaint #RD-${selectedComplaint.id}`);
-                                    setWorkDate('');
-                                    setScheduledTime('');
-                                    setAssignedTeam(selectedComplaint.assigned_team || '');
-                                    setProgress(selectedComplaint.timeline?.[selectedComplaint.timeline.length - 1]?.progress || 50);
-                                    setEstimatedCompletion(selectedComplaint.estimated_completion ? selectedComplaint.estimated_completion.slice(0, 16) : '');
-                                    setIsUpdatingStatus(true);
-                                }}
-                                className="w-full bg-primary hover:bg-primary-container text-white py-3 rounded-xl font-label-md font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-xs cursor-pointer"
-                            >
-                                <span className="material-symbols-outlined text-sm">edit_note</span>
-                                Update Status & Timelines
-                            </button>
+                             {/* CTA Action button */}
+                            <div className="flex flex-col gap-xs w-full">
+                                <button 
+                                    onClick={() => {
+                                        setNewStatus(selectedComplaint.status);
+                                        setTimelineStatus(selectedComplaint.status === 'Pending' ? 'Submitted' : selectedComplaint.status);
+                                        setOfficer(selectedComplaint.assigned_officer || 'Zonal Inspector');
+                                        setDepartment(selectedComplaint.assigned_team || 'Municipal Roads Dept');
+                                        setRemarks(`Timeline update for complaint #RD-${selectedComplaint.id}`);
+                                        setWorkDate('');
+                                        setScheduledTime('');
+                                        setAssignedTeam(selectedComplaint.assigned_team || '');
+                                        setProgress(selectedComplaint.timeline?.[selectedComplaint.timeline.length - 1]?.progress || 50);
+                                        setEstimatedCompletion(selectedComplaint.estimated_completion ? selectedComplaint.estimated_completion.slice(0, 16) : '');
+                                        setIsUpdatingStatus(true);
+                                    }}
+                                    className="w-full bg-primary hover:bg-primary-container text-white py-3 rounded-xl font-label-md font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-xs cursor-pointer text-xs"
+                                >
+                                    <span className="material-symbols-outlined text-sm">edit_note</span>
+                                    Update Status & Timelines
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        if (window.confirm(`Are you sure you want to delete complaint #RD-${selectedComplaint.id}?`)) {
+                                            try {
+                                                await complaintService.delete(selectedComplaint.id);
+                                                setSuccessMessage(`Complaint #RD-${selectedComplaint.id} deleted successfully.`);
+                                                setSelectedComplaint(null);
+                                                fetchComplaints(); // Refresh operations list
+                                            } catch (err) {
+                                                console.error("Failed to delete complaint:", err);
+                                                setError("Failed to delete complaint.");
+                                            }
+                                        }
+                                    }}
+                                    className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-label-md font-bold shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-xs cursor-pointer text-xs"
+                                >
+                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                    Delete Complaint
+                                </button>
+                            </div>
                         </>
                     ) : (
                         <div className="text-center text-outline font-body-md py-12">
@@ -744,11 +772,11 @@ const AdminComplaints = () => {
                                 ></textarea>
                             </div>
 
-                            {/* Repair completed verifications image upload */}
-                            {(newStatus === 'Completed' || timelineStatus === 'Completed') && (
+                             {/* Repair completed verifications image upload */}
+                            {(['Completed', 'Closed', 'In Progress', 'Work Started'].includes(newStatus) || ['Completed', 'Closed', 'Work In Progress', 'Work Started'].includes(timelineStatus)) && (
                                 <div className="space-y-xs p-md bg-emerald-50/50 rounded-xl border border-emerald-100">
                                     <label className="block font-label-md text-emerald-800 font-bold text-[11px]" htmlFor="modal-after-image">
-                                        Upload Verification Image (Post Repair Photo)
+                                        {['Completed', 'Closed'].includes(newStatus) ? 'Upload Verification Image (Post Repair Photo)' : 'Upload Work Progress Image (During Repair Photo)'}
                                     </label>
                                     <input 
                                         id="modal-after-image"
@@ -758,7 +786,7 @@ const AdminComplaints = () => {
                                         className="w-full text-[10px] text-slate-500 file:mr-md file:py-1.5 file:px-md file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-emerald-100 file:text-emerald-700 hover:file:bg-emerald-200 cursor-pointer"
                                     />
                                     <p className="text-[9px] text-emerald-600 uppercase font-semibold">
-                                        Restored road surface visual audit verification proof
+                                        {['Completed', 'Closed'].includes(newStatus) ? 'Restored road surface visual audit verification proof' : 'Active road repair operations progress audit photo'}
                                     </p>
                                 </div>
                             )}
