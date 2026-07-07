@@ -10,6 +10,10 @@ class Complaint(models.Model):
     DAMAGE_TYPES = [
         ('Pothole', 'Pothole'),
         ('Crack', 'Crack'),
+        ('Alligator Crack', 'Alligator Crack'),
+        ('Longitudinal Crack', 'Longitudinal Crack'),
+        ('Transverse Crack', 'Transverse Crack'),
+        ('Surface Damage', 'Surface Damage'),
         ('Unknown', 'Unknown'),
     ]
 

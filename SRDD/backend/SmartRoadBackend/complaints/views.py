@@ -1,7 +1,9 @@
 import logging
+import os
 from datetime import timedelta
 
 from django.utils import timezone
+from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
@@ -124,48 +126,61 @@ def create_complaint(request):
         # Run AI detection
         if complaint.image and complaint.image.name:
             try:
-                result = detect_damage(complaint.image.path)
+                logger.info(f"========== AI DETECTION START for complaint #{complaint.id} ==========")
+                logger.info(f"Image path: {complaint.image.path}")
+                
+                # Prepare annotated image path
+                image_dir = os.path.dirname(complaint.image.path)
+                image_base = os.path.basename(complaint.image.path)
+                image_name_no_ext = os.path.splitext(image_base)[0]
+                annotated_path = os.path.join(image_dir, f"{image_name_no_ext}_annotated.jpg")
+                
+                # Run detection with annotation generation
+                logger.info("Calling detect_damage...")
+                result = detect_damage(complaint.image.path, save_annotated_path=annotated_path)
+                
                 damage_type = result.get('damage_type', 'No Damage Detected')
                 confidence = result.get('confidence', 0.0)
                 bounding_box = result.get('bounding_box')
-
-                # Determine if actual damage was found (confidence must be > 0 and damage_type must be valid)
+                annotated_image_path = result.get('annotated_image_path')
+                
+                logger.info(f"Detection result: damage_type={damage_type}, confidence={confidence}%, has_bbox={bounding_box is not None}")
+                
+                # Determine if actual damage was found
                 damage_found = (
                     damage_type not in ['No Damage Detected', 'Unknown'] 
                     and confidence > 0
                 )
+                
+                logger.info(f"Damage found: {damage_found}, confidence threshold check: {confidence} > 0")
 
-                # Severity from confidence (ONLY override if confidence is below threshold AND no damage detected)
-                # If model says it detected damage, trust it (don't force No Damage Detected)
-                if not damage_found or confidence < 1:
-                    severity = 1
-                    severity_level = 'Low'
-                    priority = 'Low'
-                    damage_type = 'No Damage Detected'
-                    confidence = 0
-                elif confidence >= 80:
-                    severity = 5
-                    severity_level = 'Critical'
-                    priority = 'Urgent'
-                elif confidence >= 60:
-                    severity = 4
-                    severity_level = 'High'
-                    priority = 'High'
-                elif confidence >= 40:
-                    severity = 3
-                    severity_level = 'Medium'
-                    priority = 'Medium'
-                elif confidence >= 20:
-                    severity = 2
-                    severity_level = 'Low'
-                    priority = 'Low'
+                # CRITICAL: Calculate severity based on confidence
+                # Do NOT override good detections with "No Damage Detected"
+                if damage_found:
+                    if confidence >= 80:
+                        severity = 5
+                        severity_level = 'Critical'
+                        priority = 'Urgent'
+                    elif confidence >= 60:
+                        severity = 4
+                        severity_level = 'High'
+                        priority = 'High'
+                    elif confidence >= 40:
+                        severity = 3
+                        severity_level = 'Medium'
+                        priority = 'Medium'
+                    else:
+                        # Confidence between 0.1% and 40% - still damage detected
+                        severity = 2
+                        severity_level = 'Low'
+                        priority = 'Low'
                 else:
-                    # For detections between 1% and 20%, still mark as damage found but low priority
+                    # Truly no damage detected
                     severity = 1
                     severity_level = 'Low'
                     priority = 'Low'
 
-                # Build AI summary based on whether damage was detected
+                # Build AI summary
                 if damage_found:
                     ai_summary = (
                         f"Computer vision analysis classified this road hazard as: {damage_type}. "
@@ -180,8 +195,9 @@ def create_complaint(request):
                         "The image has been submitted for manual review by our inspection team."
                     )
 
+                # Update complaint with detection results
                 complaint.detected_damage = damage_type
-                complaint.damage_type = damage_type if damage_type in ['Pothole', 'Crack'] else 'Unknown'
+                complaint.damage_type = damage_type if damage_type in ['Pothole', 'Crack', 'Alligator Crack', 'Longitudinal Crack', 'Transverse Crack', 'Surface Damage'] else 'Unknown'
                 complaint.confidence = confidence
                 complaint.severity = severity
                 complaint.severity_level = severity_level
@@ -189,20 +205,42 @@ def create_complaint(request):
                 complaint.ai_summary = ai_summary
                 complaint.ai_bounding_box = bounding_box
                 complaint.status = 'Pending'
+                
+                # If annotated image was generated, save it
+                if annotated_image_path and os.path.exists(annotated_image_path):
+                    try:
+                        # Replace the original image with annotated version
+                        # Get relative path from MEDIA_ROOT
+                        media_root = str(settings.MEDIA_ROOT)
+                        if annotated_image_path.startswith(media_root):
+                            relative_path = annotated_image_path[len(media_root):].lstrip('\\/')
+                            complaint.image = relative_path
+                            logger.info(f"✓ Annotated image set: {relative_path}")
+                        else:
+                            logger.warning(f"Annotated image path not under MEDIA_ROOT, keeping original")
+                    except Exception as e:
+                        logger.warning(f"Failed to set annotated image: {e}")
+                
                 complaint.save()
-
-                logger.info(f"AI detected: {damage_type} ({confidence}%) for complaint #{complaint.id}")
+                logger.info(f"========== AI DETECTION COMPLETE for complaint #{complaint.id} ==========")
+                logger.info(f"Final: {damage_type} ({confidence}%), severity={severity_level}")
+                
             except Exception as e:
                 import traceback
                 error_tb = traceback.format_exc()
-                logger.error(f"AI detection failed for complaint #{complaint.id}: {error_tb}")
+                logger.critical(f"========== AI DETECTION FAILED for complaint #{complaint.id} ==========")
+                logger.critical(f"Error: {e}")
+                logger.critical(f"Traceback:\n{error_tb}")
+                
+                # On error, mark as "No Damage Detected" with error message
                 complaint.detected_damage = 'No Damage Detected'
                 complaint.confidence = 0
                 complaint.severity = 1
                 complaint.severity_level = 'Low'
                 complaint.priority = 'Low'
-                complaint.ai_summary = f"AI analysis error (will retry on review): {str(e)}"
+                complaint.ai_summary = f"AI analysis error (manual review required): {str(e)}"
                 complaint.save()
+                logger.critical("Saved complaint with error state")
 
         # Create initial timeline entry
         create_timeline_entry(
