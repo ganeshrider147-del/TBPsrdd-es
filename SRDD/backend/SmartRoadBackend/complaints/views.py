@@ -186,9 +186,11 @@ def create_complaint(request):
 
                 logger.info(f"AI detected: {damage_type} ({confidence}%) for complaint #{complaint.id}")
             except Exception as e:
-                logger.error(f"AI detection failed for complaint #{complaint.id}: {str(e)}")
+                import traceback
+                error_tb = traceback.format_exc()
+                logger.error(f"AI detection failed for complaint #{complaint.id}: {error_tb}")
                 complaint.detected_damage = 'No Damage Detected'
-                complaint.ai_summary = 'AI analysis could not be completed. Manual review required.'
+                complaint.ai_summary = f"AI analysis failed: {str(e)}\n\nTraceback:\n{error_tb}"
                 complaint.save()
 
         # Create initial timeline entry
