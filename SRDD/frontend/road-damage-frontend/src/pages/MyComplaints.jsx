@@ -67,14 +67,17 @@ const MyComplaints = () => {
         const confirmed = window.confirm("Are you sure you want to delete this complaint? This action cannot be undone.");
         if (!confirmed) return;
 
+        const complaintId = Number(id);
+
         try {
-            await complaintService.delete(id);
+            await complaintService.delete(complaintId);
             addToast({
                 title: "Success",
                 message: "Complaint deleted successfully.",
                 type: "success"
             });
-            setComplaints(prev => prev.filter(c => c.id !== id));
+            setComplaints(prev => prev.filter(c => Number(c.id) !== complaintId));
+            setFilteredComplaints(prev => prev.filter(c => Number(c.id) !== complaintId));
         } catch (err) {
             console.error('Error deleting complaint:', err);
             addToast({

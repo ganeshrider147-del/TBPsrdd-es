@@ -206,20 +206,9 @@ def create_complaint(request):
                 complaint.ai_bounding_box = bounding_box
                 complaint.status = 'Pending'
                 
-                # If annotated image was generated, save it
+                # Keep the original uploaded image and save the annotated image separately.
                 if annotated_image_path and os.path.exists(annotated_image_path):
-                    try:
-                        # Replace the original image with annotated version
-                        # Get relative path from MEDIA_ROOT
-                        media_root = str(settings.MEDIA_ROOT)
-                        if annotated_image_path.startswith(media_root):
-                            relative_path = annotated_image_path[len(media_root):].lstrip('\\/')
-                            complaint.image = relative_path
-                            logger.info(f"✓ Annotated image set: {relative_path}")
-                        else:
-                            logger.warning(f"Annotated image path not under MEDIA_ROOT, keeping original")
-                    except Exception as e:
-                        logger.warning(f"Failed to set annotated image: {e}")
+                    logger.info(f"✓ Annotated image saved separately: {annotated_image_path}")
                 
                 complaint.save()
                 logger.info(f"========== AI DETECTION COMPLETE for complaint #{complaint.id} ==========")
@@ -435,20 +424,17 @@ def upload_after_image(request, id):
     file_obj = request.FILES['after_image']
     status = complaint.status
 
-    # Map the file to the correct ImageField based on status
-    # Django's ImageField will automatically delete the old file when replaced
-    if status in ['Pending', 'Assigned', 'Work Scheduled']:
-        data = {'image': file_obj}
+    # Always store the uploaded file in the after_image field so it can be replaced repeatedly.
+    data = {'after_image': file_obj}
+    if status in ['Completed', 'Closed', 'Repair Verification']:
+        timeline_status = 'Repair Verification'
+        remarks = 'Repair completion image uploaded for verification.'
+    elif status in ['Pending', 'Assigned', 'Work Scheduled', 'Work Started', 'In Progress']:
         timeline_status = 'Pending' if status == 'Pending' else status
-        remarks = 'Before repair photo updated/replaced.'
+        remarks = 'Repair progress image uploaded.'
     else:
-        data = {'after_image': file_obj}
-        if status in ['Completed', 'Closed', 'Repair Verification']:
-            timeline_status = 'Repair Verification'
-            remarks = 'Repair completion image uploaded for verification.'
-        else:
-            timeline_status = 'Work In Progress' if status == 'In Progress' else status
-            remarks = 'Repair progress image uploaded.'
+        timeline_status = status
+        remarks = 'Repair progress image uploaded.'
 
     # Use serializer to validate, convert format, and save safely
     serializer = ComplaintSerializer(instance=complaint, data=data, partial=True, context={'request': request})

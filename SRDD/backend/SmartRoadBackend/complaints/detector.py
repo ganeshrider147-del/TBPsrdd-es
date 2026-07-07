@@ -107,57 +107,57 @@ def detect_damage(image_path, save_annotated_path=None):
                 continue
 
             boxes = result.boxes
-            best_idx = int(boxes.conf.argmax().item())
-            cls = int(boxes.cls[best_idx].item())
-            conf = float(boxes.conf[best_idx].item())
-            box = boxes.xyxy[best_idx].tolist()
+            for detection_idx in range(len(boxes.conf)):
+                cls = int(boxes.cls[detection_idx].item())
+                conf = float(boxes.conf[detection_idx].item())
+                box = boxes.xyxy[detection_idx].tolist()
 
-            # Get class name - handle both dict and list formats
-            try:
-                if isinstance(model.names, dict):
-                    raw_name = model.names.get(cls, f"Class_{cls}")
-                    logger.info(f"[DETECT]   model.names is dict, class name: {raw_name}")
-                elif isinstance(model.names, (list, tuple)):
-                    raw_name = model.names[cls] if cls < len(model.names) else f"Class_{cls}"
-                    logger.info(f"[DETECT]   model.names is list, class name: {raw_name}")
+                # Get class name - handle both dict and list formats
+                try:
+                    if isinstance(model.names, dict):
+                        raw_name = model.names.get(cls, f"Class_{cls}")
+                        logger.info(f"[DETECT]   model.names is dict, class name: {raw_name}")
+                    elif isinstance(model.names, (list, tuple)):
+                        raw_name = model.names[cls] if cls < len(model.names) else f"Class_{cls}"
+                        logger.info(f"[DETECT]   model.names is list, class name: {raw_name}")
+                    else:
+                        logger.warning(f"[DETECT]   model.names is unexpected type: {type(model.names)}, treating as dict")
+                        raw_name = model.names.get(cls, f"Class_{cls}") if hasattr(model.names, 'get') else f"Class_{cls}"
+                except Exception as e:
+                    logger.error(f"[DETECT] ❌ Error accessing class name at index {cls}: {e}", exc_info=True)
+                    raw_name = f"Class_{cls}"
+                
+                logger.info(f"[DETECT] → Candidate detection: class_id={cls}, class_name='{raw_name}', conf={conf:.4f} (raw)")
+
+                # Normalize class names to standard labels
+                name_lower = raw_name.lower()
+                if any(x in name_lower for x in ["pothole", "pot hole", "hole", "pit"]):
+                    candidate_damage_type = "Pothole"
+                elif any(x in name_lower for x in ["crack", "alligator", "linear", "fracture", "longitudinal", "transverse"]):
+                    candidate_damage_type = "Crack"
+                elif any(x in name_lower for x in ["surface", "damage", "road"]):
+                    candidate_damage_type = "Surface Damage"
                 else:
-                    logger.warning(f"[DETECT]   model.names is unexpected type: {type(model.names)}, treating as dict")
-                    raw_name = model.names.get(cls, f"Class_{cls}") if hasattr(model.names, 'get') else f"Class_{cls}"
-            except Exception as e:
-                logger.error(f"[DETECT] ❌ Error accessing class name at index {cls}: {e}", exc_info=True)
-                raw_name = f"Class_{cls}"
-            
-            logger.info(f"[DETECT] → Candidate detection: class_id={cls}, class_name='{raw_name}', conf={conf:.4f} (raw)")
+                    # Ignore background / no-damage classes entirely
+                    if name_lower in ["background", "no damage", "nodamage", "none", ""]:
+                        logger.info(f"[DETECT]   Ignoring background/no-damage class: {raw_name}")
+                        continue
+                    candidate_damage_type = raw_name.title()
 
-            # Normalize class names to standard labels
-            name_lower = raw_name.lower()
-            if any(x in name_lower for x in ["pothole", "pot hole", "hole", "pit"]):
-                candidate_damage_type = "Pothole"
-            elif any(x in name_lower for x in ["crack", "alligator", "linear", "fracture", "longitudinal", "transverse"]):
-                candidate_damage_type = "Crack"
-            elif any(x in name_lower for x in ["surface", "damage", "road"]):
-                candidate_damage_type = "Surface Damage"
-            else:
-                # Ignore background / no-damage classes entirely
-                if name_lower in ["background", "no damage", "nodamage", "none", ""]:
-                    logger.info(f"[DETECT]   Ignoring background/no-damage class: {raw_name}")
-                    continue
-                candidate_damage_type = raw_name.title()
+                candidate_confidence = round(conf * 100, 2)
+                candidate_box = [round(v, 1) for v in box]
 
-            candidate_confidence = round(conf * 100, 2)
-            candidate_box = [round(v, 1) for v in box]
-
-            # Keep the highest-confidence valid damage detection across all boxes
-            if candidate_confidence > best_confidence:
-                damage_type = candidate_damage_type
-                confidence = candidate_confidence
-                bounding_box = candidate_box
-                best_result = result
-                best_confidence = candidate_confidence
-                logger.info(f"[DETECT] ✓ Selected as best valid damage: {damage_type} @ {confidence}%")
-                logger.info(f"[DETECT]   Bounding box: {bounding_box}")
-            else:
-                logger.info(f"[DETECT]   Lower confidence than current best; skipping: {candidate_damage_type} @ {candidate_confidence}%")
+                # Keep the highest-confidence valid damage detection across all boxes
+                if candidate_confidence > best_confidence:
+                    damage_type = candidate_damage_type
+                    confidence = candidate_confidence
+                    bounding_box = candidate_box
+                    best_result = result
+                    best_confidence = candidate_confidence
+                    logger.info(f"[DETECT] ✓ Selected as best valid damage: {damage_type} @ {confidence}%")
+                    logger.info(f"[DETECT]   Bounding box: {bounding_box}")
+                else:
+                    logger.info(f"[DETECT]   Lower confidence than current best; skipping: {candidate_damage_type} @ {candidate_confidence}%")
 
         if damage_type == "No Damage Detected":
             logger.info(f"[DETECT] ⚠ No damage detected in this image")
