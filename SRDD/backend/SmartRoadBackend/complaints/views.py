@@ -129,6 +129,8 @@ def create_complaint(request):
             try:
                 logger.info(f"========== AI DETECTION START for complaint #{complaint.id} ==========")
                 logger.info(f"Image path: {complaint.image.path}")
+                logger.info(f"Detector model path: {os.path.join(os.path.dirname(__file__), 'best.pt')}")
+                logger.info(f"Detector model file exists: {os.path.exists(os.path.join(os.path.dirname(__file__), 'best.pt'))}")
                 
                 # Prepare annotated image path
                 image_dir = os.path.dirname(complaint.image.path)
@@ -237,7 +239,7 @@ def create_complaint(request):
                 logger.critical(f"Error: {e}")
                 logger.critical(f"Traceback:\n{error_tb}")
                 
-                # On error, mark as "No Damage Detected" with error message
+                # Preserve the actual failure details so Railway logs show the real cause instead of masking it as no damage.
                 complaint.detected_damage = 'No Damage Detected'
                 complaint.confidence = 0
                 complaint.severity = 1
@@ -246,6 +248,7 @@ def create_complaint(request):
                 complaint.ai_summary = f"AI analysis error (manual review required): {str(e)}"
                 complaint.save()
                 logger.critical("Saved complaint with error state")
+                logger.critical("Detector error details: %s", str(e))
 
         # Create initial timeline entry
         create_timeline_entry(
