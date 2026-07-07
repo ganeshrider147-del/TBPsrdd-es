@@ -258,3 +258,17 @@ TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', 'ACc88bf01c69b68ebd99f
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '80e6b31b8c2af4dfc14ba348d6aa633e')
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER', '+19516292515')
 ADMIN_PHONE_NUMBER = os.environ.get('ADMIN_PHONE_NUMBER', '+917815909821')
+
+# ------------------------------------
+# FILE STORAGE CONFIGURATION
+# ------------------------------------
+# Ensure MEDIA_ROOT exists and is writable
+MEDIA_ROOT = BASE_DIR / 'media'
+try:
+    MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass  # On Railway, directory might already exist
+
+# Django ImageField options
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755

@@ -56,37 +56,45 @@ class ComplaintSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         request = self.context.get('request')
-        from django.conf import settings
         
-        PROD_BACKEND_URL = "https://tbpsrdd-backend-93820.up.railway.app"
-        
-        # Build absolute URL for image
+        # Build absolute URL for image field
+        # Always use request.build_absolute_uri() when available for consistency
         if instance.image:
             url = instance.image.url
             if url.startswith('http://') or url.startswith('https://'):
+                # Already absolute URL, use as-is
                 representation['image'] = url
-            elif settings.DEBUG:
-                if request:
-                    representation['image'] = request.build_absolute_uri(url)
-                else:
-                    representation['image'] = f"http://localhost:8000{url}"
+            elif request:
+                # Use request context to build absolute URL (works on any deployment)
+                representation['image'] = request.build_absolute_uri(url)
             else:
-                representation['image'] = f"{PROD_BACKEND_URL}{url}"
+                # Fallback when no request context
+                from django.conf import settings
+                if settings.DEBUG:
+                    representation['image'] = f"http://localhost:8000{url}"
+                else:
+                    # On production, assume HTTPS
+                    representation['image'] = f"https://{settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost'}{url}"
         else:
             representation['image'] = None
 
-        # Build absolute URL for after_image
+        # Build absolute URL for after_image field
         if instance.after_image:
             url = instance.after_image.url
             if url.startswith('http://') or url.startswith('https://'):
+                # Already absolute URL, use as-is
                 representation['after_image'] = url
-            elif settings.DEBUG:
-                if request:
-                    representation['after_image'] = request.build_absolute_uri(url)
-                else:
-                    representation['after_image'] = f"http://localhost:8000{url}"
+            elif request:
+                # Use request context to build absolute URL (works on any deployment)
+                representation['after_image'] = request.build_absolute_uri(url)
             else:
-                representation['after_image'] = f"{PROD_BACKEND_URL}{url}"
+                # Fallback when no request context
+                from django.conf import settings
+                if settings.DEBUG:
+                    representation['after_image'] = f"http://localhost:8000{url}"
+                else:
+                    # On production, assume HTTPS
+                    representation['after_image'] = f"https://{settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost'}{url}"
         else:
             representation['after_image'] = None
             
