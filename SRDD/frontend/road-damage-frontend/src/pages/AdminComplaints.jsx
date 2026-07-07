@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { complaintService } from '../services/complaintService';
+import { getMediaUrl } from '../services/api';
 
 const AdminComplaints = () => {
     const [searchParams] = useSearchParams();
@@ -472,8 +473,8 @@ const AdminComplaints = () => {
                                     <span className="text-[10px] text-outline font-bold uppercase">Before Repair</span>
                                     <div className="aspect-[4/3] rounded-lg overflow-hidden border border-slate-100 bg-slate-50">
                                         {selectedComplaint.image ? (
-                                            <a href={selectedComplaint.image} target="_blank" rel="noreferrer">
-                                                <img className="w-full h-full object-cover hover:scale-105 transition-transform" alt="before" src={selectedComplaint.image} />
+                                            <a href={getMediaUrl(selectedComplaint.image)} target="_blank" rel="noreferrer">
+                                                <img className="w-full h-full object-cover hover:scale-105 transition-transform" alt="before" src={getMediaUrl(selectedComplaint.image)} />
                                             </a>
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">No image uploaded</div>
@@ -484,8 +485,8 @@ const AdminComplaints = () => {
                                     <span className="text-[10px] text-outline font-bold uppercase">After Repair</span>
                                     <div className="aspect-[4/3] rounded-lg overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
                                         {selectedComplaint.after_image ? (
-                                            <a href={selectedComplaint.after_image} target="_blank" rel="noreferrer">
-                                                <img className="w-full h-full object-cover hover:scale-105 transition-transform" alt="after" src={selectedComplaint.after_image} />
+                                            <a href={getMediaUrl(selectedComplaint.after_image)} target="_blank" rel="noreferrer">
+                                                <img className="w-full h-full object-cover hover:scale-105 transition-transform" alt="after" src={getMediaUrl(selectedComplaint.after_image)} />
                                             </a>
                                         ) : (
                                             <span className="text-outline text-[11px] font-medium text-center px-xs">Awaiting Completion Verification</span>
