@@ -675,3 +675,69 @@ def mark_all_notifications_read(request):
 def unread_notification_count(request):
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return Response({'count': count})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def diagnose_ai(request):
+    import sys
+    import os
+    import torch
+    from PIL import Image
+    from ultralytics import YOLO
+    
+    diagnostic_info = {}
+    
+    try:
+        diagnostic_info['python_version'] = sys.version
+        diagnostic_info['pytorch_version'] = torch.__version__
+        diagnostic_info['cuda_available'] = torch.cuda.is_available()
+        
+        # Check model file
+        model_path = os.path.join(os.path.dirname(__file__), "best.pt")
+        diagnostic_info['model_path'] = model_path
+        diagnostic_info['model_exists'] = os.path.exists(model_path)
+        if os.path.exists(model_path):
+            diagnostic_info['model_size'] = os.path.getsize(model_path)
+            model = YOLO(model_path)
+            diagnostic_info['model_names'] = model.names
+            
+            # Find any image in media/complaints/ to run inference on
+            media_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "media", "complaints")
+            diagnostic_info['media_dir'] = media_dir
+            diagnostic_info['media_dir_exists'] = os.path.exists(media_dir)
+            
+            if os.path.exists(media_dir):
+                files = [f for f in os.listdir(media_dir) if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+                diagnostic_info['available_images'] = files
+                
+                if files:
+                    test_img_path = os.path.join(media_dir, files[0])
+                    diagnostic_info['test_image'] = test_img_path
+                    
+                    img = Image.open(test_img_path)
+                    diagnostic_info['img_mode'] = img.mode
+                    diagnostic_info['img_size'] = img.size
+                    
+                    # Run inference with conf=0.01 to see all raw boxes
+                    results = model(img, conf=0.01, verbose=False)
+                    runs = []
+                    for result in results:
+                        if result.boxes is not None:
+                            for box in result.boxes:
+                                cls = int(box.cls[0].item())
+                                conf = float(box.conf[0].item())
+                                xyxy = box.xyxy[0].tolist()
+                                runs.append({
+                                    'class': cls,
+                                    'class_name': model.names[cls],
+                                    'confidence': conf,
+                                    'box': xyxy
+                                })
+                    diagnostic_info['detections'] = runs
+    except Exception as e:
+        import traceback
+        diagnostic_info['error'] = str(e)
+        diagnostic_info['traceback'] = traceback.format_exc()
+        
+    return Response(diagnostic_info)
