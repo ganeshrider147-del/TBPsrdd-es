@@ -47,7 +47,7 @@ def detect_damage(image_path, save_annotated_path=None):
         save_annotated_path: Optional path to save annotated image with bounding boxes
 
     Returns:
-        dict with keys:
+        list of dicts, where each dict contains:
             - damage_type (str): 'Pothole', 'Crack', 'Alligator Crack', etc. or 'No Damage Detected'
             - confidence (float): percentage 0-100
             - bounding_box (list|None): [x1, y1, x2, y2] in pixels
@@ -91,11 +91,8 @@ def detect_damage(image_path, save_annotated_path=None):
         results = model(pil_img, conf=0.05, verbose=False)
         logger.info(f"[DETECT] ✓ YOLO inference complete, returned {len(results)} result(s)")
 
-        damage_type = None
-        confidence = 0.0
-        bounding_box = None
+        detections_list = []
         best_result = None
-        best_confidence = -1.0
 
         # Process all YOLO detections and keep the best valid road damage class
         for result_idx, result in enumerate(results):
@@ -153,22 +150,17 @@ def detect_damage(image_path, save_annotated_path=None):
                 candidate_confidence = round(conf * 100, 2)
                 candidate_box = [round(v, 1) for v in box]
 
-                # Keep the highest-confidence valid damage detection across all boxes
-                if candidate_confidence > best_confidence:
-                    damage_type = candidate_damage_type
-                    confidence = candidate_confidence
-                    bounding_box = candidate_box
-                    best_result = result
-                    best_confidence = candidate_confidence
-                    logger.info(f"[DETECT] ✓ Selected as best valid damage: {damage_type} @ {confidence}%")
-                    logger.info(f"[DETECT]   Bounding box: {bounding_box}")
-                else:
-                    logger.info(f"[DETECT]   Lower confidence than current best; skipping: {candidate_damage_type} @ {candidate_confidence}%")
+                best_result = result
+                detections_list.append({
+                    "damage_type": candidate_damage_type,
+                    "confidence": candidate_confidence,
+                    "bounding_box": candidate_box,
+                    "annotated_image_path": None
+                })
+                logger.info(f"[DETECT] ✓ Appended valid damage detection: {candidate_damage_type} @ {candidate_confidence}%")
+                logger.info(f"[DETECT]   Bounding box: {candidate_box}")
 
-        if damage_type is None:
-            damage_type = "No Damage Detected"
-            confidence = 0.0
-            bounding_box = None
+        if not detections_list:
             logger.info(f"[DETECT] ⚠ No valid damage detections were found in this image")
         
         annotated_image_path = None
@@ -182,9 +174,9 @@ def detect_damage(image_path, save_annotated_path=None):
                     annotated_array = best_result.plot()  # Returns numpy array with boxes drawn
                 except Exception as plot_error:
                     logger.warning(f"[DETECT] result.plot() failed: {plot_error}, trying alternative method...")
-                    # Fallback: try to get the frame from the result
                     if hasattr(best_result, 'orig_img'):
-                        annotated_array = best_result.orig_img
+                        # Convert BGR array from YOLO/OpenCV format to RGB to avoid color channel inversion
+                        annotated_array = best_result.orig_img[..., ::-1].copy()
                     else:
                         annotated_array = None
                 
@@ -205,6 +197,8 @@ def detect_damage(image_path, save_annotated_path=None):
                     annotated_pil.save(save_annotated_path, quality=95)
                     logger.info(f"[DETECT] ✓ Annotated image saved to: {save_annotated_path}")
                     annotated_image_path = save_annotated_path
+                    for det in detections_list:
+                        det["annotated_image_path"] = save_annotated_path
                 else:
                     logger.warning(f"[DETECT] ⚠ result.plot() returned None, skipping annotation")
             except Exception as e:
@@ -212,14 +206,9 @@ def detect_damage(image_path, save_annotated_path=None):
                 # Don't fail the detection, just skip annotation
         
         logger.info(f"[DETECT] ====== DETECTION COMPLETE ======")
-        logger.info(f"[DETECT] Final result: {damage_type} ({confidence}%)")
+        logger.info(f"[DETECT] Final result: Found {len(detections_list)} total valid detection(s).")
         
-        return {
-            "damage_type": damage_type,
-            "confidence": confidence,
-            "bounding_box": bounding_box,
-            "annotated_image_path": annotated_image_path,
-        }
+        return detections_list
 
     except FileNotFoundError as e:
         logger.error(f"[DETECT] ❌ File error: {e}")
