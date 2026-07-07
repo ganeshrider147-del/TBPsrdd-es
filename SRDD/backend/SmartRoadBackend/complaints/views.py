@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -268,6 +269,7 @@ def create_complaint(request):
 # ---------------------------
 @api_view(['GET', 'DELETE'])
 @permission_classes([IsAuthenticated])
+@csrf_exempt
 def track_complaint(request, id):
     try:
         complaint = Complaint.objects.get(id=id)
